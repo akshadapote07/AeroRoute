@@ -7,7 +7,7 @@
  * DESCRIPTION : Standalone entry point for Subject 1.
  *               Demonstrates all array CRUD operations and
  *               all three linked list route types.
- *               Writes real data to website JSON files.
+ *               Writes real data to JSON files.
  * HOW TO RUN  :
  *   cd src/PL
  *   g++ Subject1_Main.cpp CityGrid.cpp RouteTracker.cpp DeliveryScheduler.cpp -o ../../build/subject1.exe -std=c++17
@@ -65,11 +65,11 @@ int main() {
                 runInteractiveMode(grid, tracker);
                 break;
             case 4:
-                // Export current state to JSON for website
+                // Export current state to JSON
                 grid.exportToJson();
                 tracker.exportToJson();
                 cout << "\n  Both JSON files updated.\n";
-                cout << "  Check website/data/ folder.\n\n";
+                cout << "  Check the project-root JSON files.\n\n";
                 break;
             case 5:
                 runTask3Demo();
@@ -96,7 +96,7 @@ void showMenu() {
     cout << "       SLL forward | DLL return | CLL patrol\n";
     cout << "   [3] Interactive Mode — User Input\n";
     cout << "       You choose nodes and routes manually\n";
-    cout << "   [4] Export to JSON (update website)\n";
+    cout << "   [4] Export to JSON\n";
     cout << "   [5] Task 3 Demo — Delivery Queue and Completed Stack\n";
     cout << "   [0] Exit\n";
     cout << "  ------------------------------------------------\n";
@@ -151,7 +151,7 @@ void runTask1Demo(CityGrid& grid) {
     cout << "  [ADJACENCY] Flight corridors:\n";
     grid.displayAdjacency();
 
-    // Export to JSON so website updates
+    // Export to JSON
     grid.exportToJson();
 
     cout << "  Task 1 demo complete.\n\n";
@@ -249,7 +249,7 @@ void runTask3Demo() {
 }
 
 // ════════════════════════════════════════════════════════════
-// INTERACTIVE MODE — reads from website user_input.json
+// INTERACTIVE MODE — reads from project-root user_input.json
 // Also accepts direct terminal input
 // ════════════════════════════════════════════════════════════
 void runInteractiveMode(CityGrid& grid, RouteTracker& tracker) {
@@ -266,7 +266,7 @@ void runInteractiveMode(CityGrid& grid, RouteTracker& tracker) {
         cout << "  [5] Add route waypoint\n";
         cout << "  [6] Advance drone one step\n";
         cout << "  [7] Display grid and route\n";
-        cout << "  [8] Export to JSON (update website)\n";
+        cout << "  [8] Export to JSON\n";
         cout << "  [0] Back to main menu\n";
         cout << "  Choice: ";
         cin >> subChoice;

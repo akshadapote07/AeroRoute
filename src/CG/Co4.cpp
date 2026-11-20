@@ -23,6 +23,16 @@
 
 using namespace std;
 
+namespace {
+bool cgCo4BackToMenuRequested = false;
+}
+
+bool consumeCgCo4BackToMenuRequest() {
+    const bool requested = cgCo4BackToMenuRequested;
+    cgCo4BackToMenuRequested = false;
+    return requested;
+}
+
 void verifyCgCo4Transform() {
     GraphicsRenderer renderer;
     const TransformMatrix transform =
@@ -47,6 +57,7 @@ void verifyCgCo4Transform() {
 }
 
 void runCgCo4(int argc, char** argv) {
+    cgCo4BackToMenuRequested = false;
     cout << "\n--- CG integrated mission: PL + COA + OOP + CG ---\n"
          << "The final window animates the same route, drone and delivery "
             "configured by the other subjects.\n";
@@ -76,10 +87,14 @@ void runCgCo4(int argc, char** argv) {
     }
     customer.addPendingDelivery();
 
-    const vector<pair<int, int>> flightPath = {
+    vector<pair<int, int>> flightPath = {
         {0, 0}, {0, 1}, {1, 1}, {1, 2}, {2, 2},
         {2, 3}, {3, 3}, {3, 4}, {4, 4}
     };
+    const size_t deliveryWaypoint = flightPath.size() - 1;
+    for (size_t index = flightPath.size() - 1; index > 0; --index) {
+        flightPath.push_back(flightPath[index - 1]);
+    }
     RouteTracker route;
     route.setRouteType(ROUTE_SLL);
     for (size_t index = 0; index < flightPath.size(); ++index) {
@@ -128,23 +143,55 @@ void runCgCo4(int argc, char** argv) {
     GraphicsRenderer renderer;
     renderer.loadGrid(cells, labels, activeRows, activeCols);
     renderer.setSimulationPaths(flightPath, {});
+    renderer.setDeliveryWaypointIndex(deliveryWaypoint);
     renderer.followClipWindowToWaypoint(0);
     renderer.setTask3EffectsEnabled(true);
+    renderer.set3DViewEnabled(true);
+    renderer.setBatteryStatus(drone.getBatteryPct(), false);
+    renderer.setDeliveryPopupCallback([](int action) {
+        if (action == 1) cgCo4BackToMenuRequested = true;
+        cout << (action == 1
+                     ? "[CG] Back to menu requested.\n"
+                     : "[CG] Additional delivery drone requested.\n");
+    });
     verifyCgCo4Transform();
     renderer.applyTransform(0.0f, 0.0f, 0.0f, 1.0f);
 
     int waypointCurrent = 0;
     bool delivered = false;
+    bool returnedToWarehouse = false;
     string simulationError;
     renderer.setSimulationCallback(
         [&](int row, int col, bool isTraffic, bool isDelivered) {
             if (isTraffic) return;
 
             drone.fly(row, col);
+            renderer.setBatteryStatus(drone.getBatteryPct(), false);
             route.advanceDrone();
             ++waypointCurrent;
             renderer.followClipWindowToWaypoint(
                 static_cast<size_t>(waypointCurrent));
+            if (city.getCellType(row, col) == CELL_CHARGING &&
+                drone.getBatteryPct() < 99.999) {
+                if (!chargingPad.startCharging()) {
+                    simulationError =
+                        "The integrated drone could not dock at its charging pad.";
+                    return;
+                }
+                drone.setStatus("CHARGING");
+                renderer.setBatteryStatus(drone.getBatteryPct(), true);
+                renderer.pauseSimulationForCharging(2.0f, [&]() {
+                    drone.chargeBattery(static_cast<float>(
+                        100.0 - drone.getBatteryPct()));
+                    drone.setStatus("IDLE");
+                    chargingPad.finishCharging();
+                    renderer.setBatteryStatus(drone.getBatteryPct(), false);
+                });
+            }
+            if (row == 0 && col == 0 &&
+                waypointCurrent > static_cast<int>(deliveryWaypoint)) {
+                returnedToWarehouse = true;
+            }
             if (isDelivered) {
                 if (!drone.unloadPackage()) {
                     simulationError =
@@ -171,7 +218,10 @@ void runCgCo4(int argc, char** argv) {
                 static_cast<int>(drone.getHeadingDeg()),
                 waypointCurrent, static_cast<int>(flightPath.size()),
                 drone.getModelName(), route.getActiveType(),
-                isDelivered ? "DELIVERED" : "ACTIVE");
+                isDelivered ? "DELIVERED"
+                    : returnedToWarehouse ? "RETURNED"
+                    : delivered ? "RETURNING"
+                    : "ACTIVE");
         });
 
     vector<EntityData> entities = {
@@ -210,7 +260,7 @@ void runCgCo4(int argc, char** argv) {
     if (!simulationError.empty()) {
         throw runtime_error(simulationError);
     }
-    if (!delivered || drone.hasPackage() ||
+    if (!delivered || !returnedToWarehouse || drone.hasPackage() ||
         customer.getCompletedDeliveries() != 1 ||
         scheduler.getPendingCount() != 0 ||
         scheduler.getCompletedCount() != 1) {

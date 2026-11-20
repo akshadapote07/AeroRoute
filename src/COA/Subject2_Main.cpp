@@ -71,7 +71,7 @@ int main() {
                     engine.getDisplacement()
                 );
                 cout << "\n  registers.json updated.\n"
-                          << "  Check website dashboard.\n\n";
+                          << "  Check the project-root JSON files.\n\n";
                 break;
             case 0:
                 cout << "\n  Exiting Subject 2.\n\n";
@@ -93,10 +93,11 @@ void showMenu() {
     cout << "   [2] Task 2 Demo — Assembly Engine (CO2)\n";
     cout << "       Displacement computation + real ASM\n";
     cout << "   [3] Task 3 — Arithmetic and String Processing (CO3)\n";
-    cout << "       Successive addition + 64-bit string instructions\n";
+    cout << "       Successive-addition, ADD/shift and Booth multiply; "
+            "shift/subtract division + strings\n";
     cout << "   [4] Interactive Mode\n";
     cout << "       Enter coordinates, see computation\n";
-    cout << "   [5] Export to JSON (update website)\n";
+    cout << "   [5] Export to JSON\n";
     cout << "   [0] Exit\n";
     cout << "  ------------------------------------------------\n";
     cout << "   Choice: ";
@@ -136,12 +137,27 @@ void runTask3Demo(DroneRegisters& regs, AssemblyEngine& engine) {
     engine.clearLog();
     const long long product =
         engine.SIM_MUL_SUCCESSIVE(multiplicand, multiplier);
+    const long long addShiftProduct =
+        engine.SIM_MUL_ADD_SHIFT(multiplicand, multiplier);
+    const long long boothProduct =
+        engine.SIM_MUL_BOOTH(multiplicand, multiplier);
+    cout << "  Division uses the same two inputs (dividend / divisor):\n";
+    if (multiplier == 0) {
+        cout << "  Division skipped because the divisor cannot be zero.\n";
+    } else {
+        const IntegerDivisionResult division =
+            engine.SIM_DIV_SHIFT_SUB(multiplicand, multiplier);
+        cout << "  Quotient: " << division.quotient
+             << " | remainder: " << division.remainder << "\n";
+    }
     const size_t sourceLength = engine.asmStringLength(source);
     engine.asmStringAppend(source, suffix);
 
     cout << "  Processed string: \"" << source << "\"\n"
          << "  Original string length: " << sourceLength << "\n"
-         << "  Arithmetic result: " << product << "\n";
+         << "  Successive-addition result: " << product << "\n"
+         << "  ADD-and-shift result: " << addShiftProduct << "\n"
+         << "  Booth multiplication result: " << boothProduct << "\n";
     engine.displayInstructionLog();
     regs.exportToJson(engine.getInstructionLog(),
                       engine.getDisplacement());

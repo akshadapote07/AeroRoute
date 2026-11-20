@@ -3,8 +3,7 @@
  * FILE        : Constants.h
  * PROJECT     : AeroRoute — Autonomous Drone Delivery Simulator
  * DESCRIPTION : Shared constants used across all subjects.
- *               Cell type codes here MUST match the values
- *               JavaScript reads from grid.json.
+ *               Cell type codes here are shared across modules.
  * ============================================================
  */
 
@@ -16,7 +15,7 @@ using namespace std;
 #define GRID_ROWS 10
 #define GRID_COLS 10
 
-// ── Cell types — must match dashboard.js CellType object ─────
+// ── Cell types ────────────────────────────────────────────────
 #define CELL_EMPTY     0
 #define CELL_WAREHOUSE 1
 #define CELL_CUSTOMER  2
@@ -27,6 +26,7 @@ using namespace std;
 #define DRONE_DELIVERY "AR-D1 Delivery"
 #define DRONE_SCOUT    "AR-S1 Scout"
 #define DRONE_HEAVY    "AR-H1 Heavy Lift"
+#define DRONE_BATTERY_RANGE_GRID_UNITS 12
 
 // ── Route types ───────────────────────────────────────────────
 #define ROUTE_SLL "SLL"   // Singly Linked List  — forward path
@@ -34,13 +34,13 @@ using namespace std;
 #define ROUTE_CLL "CLL"   // Circular Linked List — patrol
 
 // ── JSON output paths (relative to where exe runs) ───────────
-#define JSON_GRID       "../../website/data/grid.json"
-#define JSON_ROUTE      "../../website/data/route.json"
-#define JSON_TELEMETRY  "../../website/data/telemetry.json"
-#define JSON_REGISTERS  "../../website/data/registers.json"
-#define JSON_MISSION    "../../website/data/mission.json"
-#define JSON_CLIPPED_ROUTE "../../website/data/clipped_route.json"
-#define JSON_INPUT      "../../website/input/user_input.json"
+#define JSON_GRID       "../../grid.json"
+#define JSON_ROUTE      "../../route.json"
+#define JSON_TELEMETRY  "../../telemetry.json"
+#define JSON_REGISTERS  "../../registers.json"
+#define JSON_MISSION    "../../mission.json"
+#define JSON_CLIPPED_ROUTE "../../clipped_route.json"
+#define JSON_INPUT      "../../user_input.json"
 
 // ── Register base address ─────────────────────────────────────
 #define PC_START 0x1000

@@ -87,7 +87,7 @@ public:
     bool isAdjacent(int r1,int c1,int r2,int c2) const;
 
     // ── JSON export ──────────────────────────────────────────
-    // Writes current grid state to website/data/grid.json
+    // Writes current grid state to grid.json
     void exportToJson(int rows = GRID_ROWS,
                       int cols = GRID_COLS) const;
 };

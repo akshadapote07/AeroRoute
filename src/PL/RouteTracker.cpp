@@ -324,7 +324,7 @@ void RouteTracker::displayRoute() const {
     else if (activeRouteType == ROUTE_CLL) cll.displayCircular();
 }
 
-// [PL CO2 - Export route to JSON for website]
+// [PL CO2 - Export route to JSON]
 void RouteTracker::exportToJson() const {
     vector<WaypointData> wps;
     int currentIdx = 0;

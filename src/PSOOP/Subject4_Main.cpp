@@ -8,7 +8,7 @@
  * DESCRIPTION : Standalone entry point for PSOOP subject.
  *               Demonstrates full OOP class hierarchy,
  *               encapsulation, inheritance, and polymorphism.
- *               Writes entity data to website mission.json.
+ *               Writes entity data to mission.json.
  * HOW TO RUN  :
  *   cd src/PSOOP
  *   g++ Subject4_Main.cpp Location.cpp Warehouse.cpp CustomerSite.cpp ChargingPad.cpp Package.cpp Drone.cpp -o ..\..\build\PSOOP.exe -std=c++17

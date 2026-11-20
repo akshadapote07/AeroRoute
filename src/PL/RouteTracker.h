@@ -126,7 +126,7 @@ public:
 // [PL CO2 - Task 2: RouteTracker]
 // Manages all three linked list types.
 // Active list is selected by routeType string.
-// Exports route data to JSON for the website.
+// Exports route data to JSON.
 // ════════════════════════════════════════════════════════════
 class RouteTracker {
 private:

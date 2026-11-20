@@ -361,6 +361,9 @@ public:
             if (!requireIntegerRange("drone_type", 1, 3, "Drone model")) {
                 return false;
             }
+            if (!requireIntegerRange("drone_count", 1, 10, "Number of drones")) {
+                return false;
+            }
             double packageWeight = 0.0;
             const MenuField* weight = findField("package_weight");
             int droneType = 0;
@@ -436,7 +439,9 @@ public:
                                      "Return to warehouse") ||
                 !requireIntegerRange("site_choice", 1,
                     static_cast<int>(customerCount()), "Delivery site") ||
-                !requireIntegerRange("drone_type", 1, 3, "Drone model")) {
+                !requireIntegerRange("drone_type", 1, 3, "Drone model") ||
+                !requireIntegerRange("drone_count", 1, 10,
+                                     "Number of drones")) {
                 return false;
             }
             double packageWeight = 0.0;
@@ -614,6 +619,8 @@ public:
              savedOr("to_col", valueOf("customer_col")), "Must match selected customer"},
             {"drone_type", "Drone model",
              savedOr("drone_type", "1"), "1 Delivery | 2 Scout | 3 Heavy"},
+            {"drone_count", "Number of drones",
+             savedOr("drone_count", "1"), "1-10 drones fly together"},
             {"package_weight", "Package weight (kg)",
              savedOr("package_weight", "1.0"), "Delivery <=15 | Scout <=0.5 | Heavy <=50"},
             {"recipient", "Recipient name",
@@ -645,8 +652,13 @@ public:
     }
 
     void chooseCity(int choice) {
-        if (choice < 1 || choice > 5) return;
+        if (choice < 1 || choice > 6) return;
         choosingCity = false;
+        if (choice == 6) {
+            cancelled = true;
+            glutLeaveMainLoop();
+            return;
+        }
         if (choice == 5) {
             pageIndex = 0;
             message.clear();
@@ -769,7 +781,7 @@ public:
             city.name, "1", selectedRoundTrip ? "1" : "0", serial,
             "1", "0", "0", std::to_string(selectedTargetRow),
             std::to_string(selectedTargetCol),
-            "1", "1.0", "AeroRoute Recipient",
+            "1", "1", "1.0", "AeroRoute Recipient",
             "100", "15", "45", "90",
             "2", "1", "5",
             "0", "0", "0", "1"
@@ -798,27 +810,31 @@ public:
                  "Choose a ready-made city or build a custom delivery map.",
                  GLUT_BITMAP_9_BY_15);
         const std::string names[] = {
-            "Delhi", "Mumbai", "Pune", "Patna", "Custom city"
+            "Delhi", "Mumbai", "Pune", "Patna",
+            "Custom city", "Exit AeroRoute"
         };
         const std::string details[] = {
             "10 x 10 map | 4 delivery sites | chargers and buildings",
             "10 x 10 map | 4 delivery sites | chargers and buildings",
             "10 x 10 map | 4 delivery sites | chargers and buildings",
             "10 x 10 map | 4 delivery sites | chargers and buildings",
-            "Set grid, locations, route, drone, package and telemetry"
+            "Set grid, locations, route, drone, package and telemetry",
+            "Close the application"
         };
         const float positions[][2] = {
             {70.0f, 160.0f}, {545.0f, 160.0f},
             {70.0f, 305.0f}, {545.0f, 305.0f},
-            {70.0f, 450.0f}
+            {70.0f, 450.0f}, {545.0f, 450.0f}
         };
-        const float widths[] = {425.0f, 425.0f, 425.0f, 425.0f, 900.0f};
+        const float widths[] = {
+            425.0f, 425.0f, 425.0f, 425.0f, 425.0f, 425.0f
+        };
         const float colors[][3] = {
             {0.13f, 0.30f, 0.47f}, {0.10f, 0.35f, 0.42f},
             {0.24f, 0.30f, 0.43f}, {0.28f, 0.27f, 0.40f},
-            {0.04f, 0.43f, 0.54f}
+            {0.04f, 0.43f, 0.54f}, {0.48f, 0.14f, 0.18f}
         };
-        for (int index = 0; index < 5; ++index) {
+        for (int index = 0; index < 6; ++index) {
             const float x = positions[index][0];
             const float y = positions[index][1];
             drawRect(x, y, widths[index], 112,
@@ -831,11 +847,13 @@ public:
             drawText(x + 22, y + 94,
                      index == 4
                          ? "Click to start custom setup"
+                         : index == 5
+                             ? "Click to exit the application"
                          : "Click to choose this city",
                      GLUT_BITMAP_9_BY_15);
         }
         glColor3f(0.62f, 0.72f, 0.82f);
-        drawText(72, 625, "Tip: press 1-5 to select a city. ESC cancels.",
+        drawText(72, 625, "Tip: press 1-4 for a city, 5 for custom, 6 to exit.",
                  GLUT_BITMAP_9_BY_15);
     }
 
@@ -1119,7 +1137,7 @@ public:
 
     void key(unsigned char key) {
         if (choosingCity) {
-            if (key >= '1' && key <= '5') chooseCity(key - '0');
+            if (key >= '1' && key <= '6') chooseCity(key - '0');
             else if (key == 27) {
                 cancelled = true;
                 glutLeaveMainLoop();
@@ -1209,10 +1227,12 @@ public:
             const float positions[][2] = {
                 {70.0f, 160.0f}, {545.0f, 160.0f},
                 {70.0f, 305.0f}, {545.0f, 305.0f},
-                {70.0f, 450.0f}
+                {70.0f, 450.0f}, {545.0f, 450.0f}
             };
-            const float widths[] = {425.0f, 425.0f, 425.0f, 425.0f, 900.0f};
-            for (int index = 0; index < 5; ++index) {
+            const float widths[] = {
+                425.0f, 425.0f, 425.0f, 425.0f, 425.0f, 425.0f
+            };
+            for (int index = 0; index < 6; ++index) {
                 if (x >= positions[index][0] &&
                     x <= positions[index][0] + widths[index] &&
                     y >= positions[index][1] &&

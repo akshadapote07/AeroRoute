@@ -39,6 +39,7 @@ namespace {
 vector<string> graphicalMissionInputs;
 size_t graphicalInputIndex = 0;
 bool graphicalInputMode = false;
+bool returnToCitySelectionRequested = false;
 
 bool readInputLine(const string& prompt, string& line) {
     if (graphicalInputMode) {
@@ -164,14 +165,17 @@ EnergyAwareRoute findEnergyAwareRoute(
     const pair<int, int>& warehouse,
     const pair<int, int>& customer,
     bool returnToWarehouse, double startingBatteryPct,
-    int batteryDrainHalfPercentPerStep) {
-    constexpr int maxBatteryTicks = 200;
+    int batteryDrainTicksPerStep) {
+    constexpr int batteryTicksPerPercent =
+        DRONE_BATTERY_RANGE_GRID_UNITS;
+    constexpr int maxBatteryTicks = 100 * batteryTicksPerPercent;
     constexpr int batteryTicksPerState = maxBatteryTicks + 1;
     const int cellCount = rows * cols;
     const int stateCount = 2 * cellCount * batteryTicksPerState;
     const int initialBatteryTicks = max(
         0, min(maxBatteryTicks,
-               static_cast<int>(floor(startingBatteryPct * 2.0 + 1e-9))));
+               static_cast<int>(floor(
+                   startingBatteryPct * batteryTicksPerPercent + 1e-9))));
     const auto encode = [cellCount, cols](int row, int col, int batteryTicks,
                                     bool delivered) {
         const int cell = row * cols + col;
@@ -228,8 +232,7 @@ EnergyAwareRoute findEnergyAwareRoute(
                 city.getCellType(nextRow, nextCol) == CELL_OBSTACLE) {
                 continue;
             }
-            int nextBatteryTicks =
-                batteryTicks - batteryDrainHalfPercentPerStep;
+            int nextBatteryTicks = batteryTicks - batteryDrainTicksPerStep;
             if (nextBatteryTicks < 0) continue;
             if (city.getCellType(nextRow, nextCol) == CELL_CHARGING) {
                 nextBatteryTicks = maxBatteryTicks;
@@ -311,7 +314,7 @@ void runMission(int argc, char** argv) {
          << "\nData entry guide:\n"
          << "  1. City map          - grid size and city/delivery area name\n"
          << "  2. Map locations     - warehouse, customer sites, pads, obstacles\n"
-         << "  3. Drone and route   - model, serial number, route structure\n"
+         << "  3. Drone and route   - model, fleet size, serial number, route structure\n"
          << "  4. Delivery          - destination site, package, recipient\n"
          << "  5. Flight computer   - path, telemetry, instruction and register\n"
          << "  6. Display and launch - movement transform, then simulate\n"
@@ -329,7 +332,7 @@ void runMission(int argc, char** argv) {
     vector<unique_ptr<Location>> locations;
     vector<CustomerSite*> customerSites;
     vector<ChargingPad*> chargingPads;
-    int initialDroneIds[1] = {0};
+    vector<int> initialDroneIds;
 
     cout << "\n--- City map and dispatch ---\n";
     const string warehouseLabel = readText("Warehouse label: ");
@@ -461,8 +464,9 @@ void runMission(int argc, char** argv) {
          << "  [2] ScoutDrone (cannot carry a package)\n"
          << "  [3] HeavyDrone\n";
     unique_ptr<Drone> drone;
+    int droneChoice = 0;
     for (;;) {
-        const int droneChoice = readNumber<int>("Select drone subclass: ", 1, 3);
+        droneChoice = readNumber<int>("Select drone subclass: ", 1, 3);
         if (droneChoice == 1) {
             drone = make_unique<DeliveryDrone>(
                 droneSerial, warehousePosition.first, warehousePosition.second);
@@ -482,6 +486,22 @@ void runMission(int argc, char** argv) {
         }
         break;
     }
+    const int droneCount = readNumber<int>(
+        "Number of drones flying together (1-10): ", 1, 10);
+    vector<unique_ptr<Drone>> additionalDrones;
+    for (int index = 1; index < droneCount; ++index) {
+        const string serial = droneSerial + "-" + to_string(index + 1);
+        if (droneChoice == 1) {
+            additionalDrones.push_back(make_unique<DeliveryDrone>(
+                serial, warehousePosition.first, warehousePosition.second));
+        } else if (droneChoice == 2) {
+            additionalDrones.push_back(make_unique<ScoutDrone>(
+                serial, warehousePosition.first, warehousePosition.second));
+        } else {
+            additionalDrones.push_back(make_unique<HeavyDrone>(
+                serial, warehousePosition.first, warehousePosition.second));
+        }
+    }
     const double packageWeight = readNumber<double>(
         "Package weight (kg; max " +
             to_string(drone->getMaxPayloadKg()) + "): ",
@@ -490,14 +510,34 @@ void runMission(int argc, char** argv) {
     Package package(packageWeight, 10.0, 10.0, 10.0,
                     warehousePosition.first, warehousePosition.second,
                     customer->getRow(), customer->getCol(), recipientName);
-    customer->addPendingDelivery();
+    vector<unique_ptr<Package>> additionalPackages;
     if (!drone->loadPackage(&package)) {
         throw runtime_error("The package could not be loaded onto the selected drone.");
     }
     package.markInTransit();
-    initialDroneIds[0] = drone->getId();
+    customer->addPendingDelivery();
+    for (size_t index = 0; index < additionalDrones.size(); ++index) {
+        auto additionalPackage = make_unique<Package>(
+            packageWeight, 10.0, 10.0, 10.0,
+            warehousePosition.first, warehousePosition.second,
+            customer->getRow(), customer->getCol(), recipientName);
+        if (!additionalDrones[index]->loadPackage(additionalPackage.get())) {
+            throw runtime_error(
+                "A package could not be loaded onto every selected drone.");
+        }
+        additionalPackage->markInTransit();
+        customer->addPendingDelivery();
+        additionalPackages.push_back(move(additionalPackage));
+    }
+    initialDroneIds.push_back(drone->getId());
+    for (const auto& additionalDrone : additionalDrones) {
+        initialDroneIds.push_back(additionalDrone->getId());
+    }
     drone->display();
     package.display();
+    for (const auto& additionalDrone : additionalDrones) {
+        additionalDrone->display();
+    }
 
     cout << "\n--- Flight telemetry ---\n";
     const int altitudeM = readNumber<int>("Altitude (m): ", 0, 10000);
@@ -509,13 +549,17 @@ void runMission(int argc, char** argv) {
     drone->setAltitude(altitudeM);
     drone->setHeading(headingDeg);
     drone->drainBattery(100.0 - batteryPct);
-    const int batteryDrainHalfPercentPerStep =
-        drone->getModelName().find("HeavyDrone") != string::npos ? 9 : 5;
+    for (const auto& additionalDrone : additionalDrones) {
+        additionalDrone->setAltitude(altitudeM);
+        additionalDrone->setHeading(headingDeg);
+        additionalDrone->drainBattery(100.0 - batteryPct);
+    }
+    constexpr int batteryDrainTicksPerStep = 100;
     const pair<int, int> selectedCustomerPosition = {
         customer->getRow(), customer->getCol()};
     const EnergyAwareRoute plannedRoute = findEnergyAwareRoute(
         city, rows, cols, warehousePosition, selectedCustomerPosition,
-        returnToWarehouse, batteryPct, batteryDrainHalfPercentPerStep);
+        returnToWarehouse, batteryPct, batteryDrainTicksPerStep);
     if (plannedRoute.waypoints.empty()) {
         throw runtime_error(
             "No battery-safe route reaches the delivery point" +
@@ -603,15 +647,26 @@ void runMission(int argc, char** argv) {
     route.exportToJson();
 
     // PSOOP CO1 - Task 1: The grid, package, warehouse, and drone are
-    // encapsulated objects; initialDroneIds is the PL Task 1 ID array.
+    // encapsulated objects; initialDroneIds tracks the dispatched fleet.
     // PSOOP CO2 - Task 2: Calls through Drone* dispatch to the chosen subclass.
     // CG CO1 - Task 1 and CG CO3 - Task 2: render primitives and transforms.
     GraphicsRenderer renderer;
     renderer.loadGrid(cells, labels, rows, cols);
     renderer.loadRoute({}, routeType);
     renderer.setSimulationPaths(deliveryPath, {});
+    renderer.setFlightDroneCount(droneCount);
     renderer.setDeliveryWaypointIndex(deliveryWaypoint);
     renderer.setTask3EffectsEnabled(true);
+    renderer.set3DViewEnabled(true);
+    renderer.setBatteryStatus(drone->getBatteryPct(), false);
+    renderer.setDeliveryPopupCallback([](int action) {
+        if (action == 1) {
+            returnToCitySelectionRequested = true;
+        }
+        cout << (action == 1
+                     ? "[CG] Back to menu requested.\n"
+                     : "[CG] Additional delivery drone requested.\n");
+    });
     renderer.applyTransform(
         translateXCells * 50.0f, translateYCells * 50.0f,
         rotationDegrees, scale);
@@ -623,6 +678,10 @@ void runMission(int argc, char** argv) {
             if (isTraffic) return;
 
             drone->fly(row, col);
+            for (const auto& additionalDrone : additionalDrones) {
+                additionalDrone->fly(row, col);
+            }
+            renderer.setBatteryStatus(drone->getBatteryPct(), false);
             route.advanceDrone();
             ++waypointCurrent;
             renderer.followClipWindowToWaypoint(
@@ -630,10 +689,14 @@ void runMission(int argc, char** argv) {
             if (delivered) {
                 drone->unloadPackage();
                 customer->receiveDelivery();
+                for (size_t index = 0;
+                     index < additionalDrones.size(); ++index) {
+                    additionalDrones[index]->unloadPackage();
+                    customer->receiveDelivery();
+                }
                 customerDeliveryCompleted = true;
             }
-            if (city.getCellType(row, col) == CELL_CHARGING &&
-                drone->getBatteryPct() < 99.999) {
+            if (city.getCellType(row, col) == CELL_CHARGING) {
                 const auto pad = find_if(
                     chargingPads.begin(), chargingPads.end(),
                     [row, col](const ChargingPad* candidate) {
@@ -644,15 +707,41 @@ void runMission(int argc, char** argv) {
                     throw runtime_error(
                         "The route reached a charging cell without a charging pad.");
                 }
-                if (!(*pad)->startCharging()) {
-                    throw runtime_error(
-                        "The drone could not dock at the planned charging pad.");
+                vector<Drone*> fleet{drone.get()};
+                for (const auto& additionalDrone : additionalDrones) {
+                    fleet.push_back(additionalDrone.get());
                 }
-                drone->setStatus("CHARGING");
-                drone->chargeBattery(
-                    static_cast<float>(100.0 - drone->getBatteryPct()));
-                (*pad)->finishCharging();
-                drone->setStatus("IDLE");
+                bool chargingNeeded = false;
+                for (Drone* fleetDrone : fleet) {
+                    if (fleetDrone->getBatteryPct() < 99.999) {
+                        fleetDrone->setStatus("CHARGING");
+                        chargingNeeded = true;
+                    }
+                }
+                if (chargingNeeded) {
+                    if (!(*pad)->startCharging()) {
+                        throw runtime_error(
+                            "A drone could not dock at the planned charging pad.");
+                    }
+                    renderer.setBatteryStatus(drone->getBatteryPct(), true);
+                    ChargingPad* activePad = *pad;
+                    Drone* primaryDrone = drone.get();
+                    renderer.pauseSimulationForCharging(
+                        2.0f, [fleet, activePad, &renderer, primaryDrone]() {
+                            for (Drone* fleetDrone : fleet) {
+                                if (fleetDrone->getBatteryPct() < 99.999) {
+                                    fleetDrone->chargeBattery(
+                                        static_cast<float>(
+                                            100.0 -
+                                            fleetDrone->getBatteryPct()));
+                                }
+                                fleetDrone->setStatus("IDLE");
+                            }
+                            activePad->finishCharging();
+                            renderer.setBatteryStatus(
+                                primaryDrone->getBatteryPct(), false);
+                        });
+                }
             }
             const int reportedWaypoint = routeType == ROUTE_CLL
                 ? waypointCurrent % static_cast<int>(deliveryPath.size())
@@ -685,11 +774,25 @@ void runMission(int argc, char** argv) {
         entities.push_back({type, location->getLabel(),
                             location->getRow(), location->getCol(), 0.0});
     }
-    entities.push_back({"drone", drone->getModelName(),
+    entities.push_back({"drone", drone->getSerialNumber() + " " +
+                            drone->getModelName(),
                         drone->getCurrentRow(), drone->getCurrentCol(), 0.0});
+    for (const auto& additionalDrone : additionalDrones) {
+        entities.push_back({
+            "drone", additionalDrone->getSerialNumber() + " " +
+                additionalDrone->getModelName(),
+            additionalDrone->getCurrentRow(), additionalDrone->getCurrentCol(),
+            0.0
+        });
+    }
     entities.push_back({"package", package.getTrackingCode(),
                         customer->getRow(), customer->getCol(),
                         package.getWeightKg()});
+    for (const auto& additionalPackage : additionalPackages) {
+        entities.push_back({"package", additionalPackage->getTrackingCode(),
+                            customer->getRow(), customer->getCol(),
+                            additionalPackage->getWeightKg()});
+    }
     renderer.setMissionEntities(entities);
     const GraphicsData graphics = {
         renderer.getTranslateX(), renderer.getTranslateY(),
@@ -707,11 +810,17 @@ void runMission(int argc, char** argv) {
     cout << "\n=== Mission configured ===\n"
          << "Dispatch destination: " << dispatchDestination << "\n"
          << "Delivery site: " << customer->getLabel() << "\n"
+         << "Drones flying together: " << droneCount << "\n"
          << "Trip type: " << (returnToWarehouse ? "round trip" : "one-way")
          << "\n"
          << "Route: " << routeType << " (" << deliveryPath.size()
          << " waypoints)\n"
-         << "Drone ID stored in PL Task 1 array: " << initialDroneIds[0] << "\n"
+         << "Dispatched drone IDs: ";
+    for (size_t index = 0; index < initialDroneIds.size(); ++index) {
+        if (index > 0) cout << ", ";
+        cout << initialDroneIds[index];
+    }
+    cout << "\n"
          << "Assembly operation: " << instruction << " "
          << registerName << ", " << operand << "\n"
          << "OpenGL window will start the mission. Close it to exit.\n";
@@ -723,21 +832,25 @@ void runMission(int argc, char** argv) {
 }
 
 void runCustomMissionSetup(int argc, char** argv) {
-    AeroRouteMenu menu;
-    graphicalMissionInputs = menu.run(argc, argv);
-    if (graphicalMissionInputs.empty()) {
-        cout << "Mission setup cancelled.\n";
-        return;
-    }
+    for (;;) {
+        AeroRouteMenu menu;
+        graphicalMissionInputs = menu.run(argc, argv);
+        if (graphicalMissionInputs.empty()) {
+            cout << "AeroRoute closed from the city-selection menu.\n";
+            return;
+        }
 
-    graphicalInputMode = true;
-    graphicalInputIndex = 0;
-    runMission(argc, argv);
-    if (graphicalInputIndex != graphicalMissionInputs.size()) {
-        throw runtime_error(
-            "The mission did not consume every value from the graphical form.");
+        returnToCitySelectionRequested = false;
+        graphicalInputMode = true;
+        graphicalInputIndex = 0;
+        runMission(argc, argv);
+        if (graphicalInputIndex != graphicalMissionInputs.size()) {
+            throw runtime_error(
+                "The mission did not consume every value from the graphical form.");
+        }
+        graphicalInputMode = false;
+        if (!returnToCitySelectionRequested) return;
     }
-    graphicalInputMode = false;
 }
 
 void runPlTask1() {
@@ -846,16 +959,22 @@ void runCoaTask3() {
     AssemblyEngine assembly(registers);
     assembly.clearLog();
     const long long product = assembly.SIM_MUL_SUCCESSIVE(7, 8);
+    const IntegerDivisionResult division =
+        assembly.SIM_DIV_SHIFT_SUB(56, 8);
     string text = "AR-DRONE";
     const size_t originalLength = assembly.asmStringLength(text);
     assembly.asmStringAppend(text, "-DELIVERED");
-    if (product != 56 || originalLength != 8 ||
+    if (product != 56 || division.quotient != 7 ||
+        division.remainder != 0 || originalLength != 8 ||
         text != "AR-DRONE-DELIVERED") {
-        throw runtime_error("COA Task 3 arithmetic/string check failed.");
+        throw runtime_error(
+            "COA Task 3 arithmetic/division/string check failed.");
     }
     cout << "  String result: " << text
          << " | original length: " << originalLength
-         << " | product: " << product << "\n";
+         << " | product: " << product
+         << " | division: 56 / 8 = " << division.quotient
+         << " remainder " << division.remainder << "\n";
     assembly.displayInstructionLog();
     registers.exportToJson(assembly.getInstructionLog(),
                            assembly.getDisplacement());
@@ -977,6 +1096,9 @@ void runCo4Demos(int argc, char** argv) {
     runCoaCo4();
     runPsoopCo4();
     runCgCo4(argc, argv);
+    if (consumeCgCo4BackToMenuRequest()) {
+        runCustomMissionSetup(argc, argv);
+    }
 }
 
 void runAllSubjectDemos(int argc, char** argv) {
@@ -1081,6 +1203,9 @@ int main(int argc, char** argv) {
                     runCo4Demos(graphicsArgc, graphicsArgv);
                 } else {
                     runCgCo4(graphicsArgc, graphicsArgv);
+                    if (consumeCgCo4BackToMenuRequest()) {
+                        runCustomMissionSetup(graphicsArgc, graphicsArgv);
+                    }
                 }
                 return 0;
             }

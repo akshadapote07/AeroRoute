@@ -14,12 +14,27 @@
 #include <iomanip>
 #include <sstream>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 using namespace std;
 
 extern "C" void aeroroute_displacement_asm(
     int fromRow, int fromCol, int toRow, int toCol,
     long long* deltaX, long long* deltaY, double* displacement);
+
+extern "C" long long aeroroute_add64_asm(long long left, long long right);
+extern "C" long long aeroroute_sub64_asm(long long left, long long right);
+extern "C" int aeroroute_compare64_asm(long long left, long long right);
+extern "C" long long aeroroute_mul_add_shift_asm(
+    long long multiplicand, long long multiplier);
+extern "C" long long aeroroute_mul_booth_asm(
+    long long multiplicand, long long multiplier);
+extern "C" void aeroroute_div_shift_sub_asm(
+    long long dividend, long long divisor,
+    long long* quotient, long long* remainder);
+extern "C" size_t aeroroute_strlen_asm(const char* text, size_t maxBytes);
+extern "C" void aeroroute_memcpy_asm(
+    char* destination, const char* source, size_t count);
 
 // ── Constructor ───────────────────────────────────────────────
 AssemblyEngine::AssemblyEngine(DroneRegisters& registerFile)
@@ -81,14 +96,14 @@ long long AssemblyEngine::SIM_ADD(
     const string& destReg,
     const string& srcOperand)
 {
-    long long result = dest + src;
+    const long long result = aeroroute_add64_asm(dest, src);
     logInstruction(
         pcToHex(regs.getPC()),
         "ADD",
         destReg + ", " + srcOperand +
         "  ; " + to_string(dest) +
         " + " + to_string(src) +
-        " = " + to_string(result)
+        " = " + to_string(result) + " [Co3Asm.S]"
     );
     regs.advancePC();
     return result;
@@ -104,14 +119,14 @@ long long AssemblyEngine::SIM_SUB(
     const string& destReg,
     const string& srcOperand)
 {
-    long long result = dest - src;
+    const long long result = aeroroute_sub64_asm(dest, src);
     logInstruction(
         pcToHex(regs.getPC()),
         "SUB",
         destReg + ", " + srcOperand +
         "  ; " + to_string(dest) +
         " - " + to_string(src) +
-        " = " + to_string(result)
+        " = " + to_string(result) + " [Co3Asm.S]"
     );
     regs.advancePC();
     return result;
@@ -148,26 +163,89 @@ long long AssemblyEngine::SIM_MUL_SUCCESSIVE(
     return result;
 }
 
+// [COA CO3 - Task 3: signed multiplication by ADD and logical shift]
+long long AssemblyEngine::SIM_MUL_ADD_SHIFT(
+    long long multiplicand, long long multiplier)
+{
+    // The assembly loop processes 32 multiplier bits; reject larger inputs.
+    if (multiplicand < -1000000LL || multiplicand > 1000000LL ||
+        multiplier < -1000000LL || multiplier > 1000000LL) {
+        throw out_of_range(
+            "ADD-and-shift multiplication requires operands in [-1000000, 1000000].");
+    }
+
+    const long long result =
+        aeroroute_mul_add_shift_asm(multiplicand, multiplier);
+    logInstruction(
+        pcToHex(regs.getPC()), "MUL_ADD_SHIFT",
+        to_string(multiplicand) + " x " + to_string(multiplier) +
+            " = " + to_string(result) + " [Co3Asm.S]");
+    regs.advancePC();
+    cout << "[COA CO3 - Task 3] ADD-and-shift multiplication: "
+         << multiplicand << " x " << multiplier << " = " << result << "\n";
+    return result;
+}
+
+// [COA CO3 - Task 3: signed multiplication using Booth recoding]
+long long AssemblyEngine::SIM_MUL_BOOTH(
+    long long multiplicand, long long multiplier)
+{
+    // Keep the multiplier inside the signed 32-bit range handled by Booth ASM.
+    if (multiplicand < -1000000LL || multiplicand > 1000000LL ||
+        multiplier < -1000000LL || multiplier > 1000000LL) {
+        throw out_of_range(
+            "Booth multiplication requires operands in [-1000000, 1000000].");
+    }
+
+    const long long result =
+        aeroroute_mul_booth_asm(multiplicand, multiplier);
+    logInstruction(
+        pcToHex(regs.getPC()), "MUL_BOOTH",
+        to_string(multiplicand) + " x " + to_string(multiplier) +
+            " = " + to_string(result) + " [Co3Asm.S]");
+    regs.advancePC();
+    cout << "[COA CO3 - Task 3] Booth multiplication: "
+         << multiplicand << " x " << multiplier << " = " << result << "\n";
+    return result;
+}
+
+// [COA CO3 - Task 3: signed division using binary shift-and-subtract]
+IntegerDivisionResult AssemblyEngine::SIM_DIV_SHIFT_SUB(
+    long long dividend, long long divisor)
+{
+    // Validate exceptional signed-division cases before entering assembly.
+    if (divisor == 0) {
+        throw invalid_argument("Division by zero is not allowed.");
+    }
+    if (dividend == numeric_limits<long long>::min() && divisor == -1) {
+        throw overflow_error("Integer division result is outside the 64-bit range.");
+    }
+
+    long long quotient = 0;
+    long long remainder = 0;
+    aeroroute_div_shift_sub_asm(
+        dividend, divisor, &quotient, &remainder);
+
+    logInstruction(
+        pcToHex(regs.getPC()), "DIV_SHIFT_SUB",
+        to_string(dividend) + " / " + to_string(divisor) +
+            " = " + to_string(quotient) +
+            " remainder " + to_string(remainder) + " [Co3Asm.S]");
+    regs.advancePC();
+
+    cout << "[COA CO3 - Task 3] Binary shift-and-subtract division: "
+         << dividend << " / " << divisor << " = " << quotient
+         << " remainder " << remainder << "\n";
+    return {quotient, remainder};
+}
+
 // [COA CO3 - Task 3: 64-bit REPNE SCASB string-length operation]
 size_t AssemblyEngine::asmStringLength(const string& text) {
-    size_t length = 0;
-#if defined(__GNUC__) && defined(__x86_64__)
-    const char* cursor = text.c_str();
-    unsigned long long remaining =
-        static_cast<unsigned long long>(text.size()) + 1ULL;
-    __asm__ volatile (
-        "repne scasb"
-        : "+D"(cursor), "+c"(remaining)
-        : "a"(0)
-        : "memory"
-    );
-    length = static_cast<size_t>(text.size() + 1ULL - remaining - 1ULL);
-#else
-    length = text.size();
-#endif
+    const size_t length = aeroroute_strlen_asm(
+        text.c_str(), text.size() + 1);
     logInstruction(pcToHex(regs.getPC()), "SCASB",
                    "REPNE SCASB ; input length = " +
-                       to_string(length));
+                       to_string(length) + " [Co3Asm.S]");
     regs.advancePC();
     return length;
 }
@@ -185,21 +263,14 @@ void AssemblyEngine::asmStringAppend(
     }
 #if defined(__GNUC__) && defined(__x86_64__)
     destination.resize(oldLength + sourceLength);
-    char* output = destination.data() + oldLength;
-    const char* input = inputText.data();
-    size_t remaining = sourceLength;
-    __asm__ volatile (
-        "rep movsb"
-        : "+D"(output), "+S"(input), "+c"(remaining)
-        :
-        : "memory"
-    );
+    aeroroute_memcpy_asm(
+        destination.data() + oldLength, inputText.data(), sourceLength);
 #else
     destination.append(inputText);
 #endif
     logInstruction(pcToHex(regs.getPC()), "MOVSB",
                    "REP MOVSB ; appended " + to_string(sourceLength) +
-                       " bytes");
+                       " bytes [Co3Asm.S]");
     regs.advancePC();
 }
 
@@ -222,17 +293,13 @@ bool AssemblyEngine::SIM_CMP_JMP(
     const string& op1Name,
     const string& op2Name)
 {
-    // CMP sets flags based on op1 - op2
-    long long result = op1 - op2;
-    bool ZF = (result == 0);
-    bool SF = (result < 0);
-    bool OF = ((op1 > 0 && op2 < 0 && result < 0) ||
-               (op1 < 0 && op2 > 0 && result > 0));
+    const int comparison = aeroroute_compare64_asm(op1, op2);
+    const bool ZF = comparison == 0;
 
     logInstruction(
         pcToHex(regs.getPC()),
         "CMP",
-        op1Name + ", " + op2Name
+        op1Name + ", " + op2Name + " [Co3Asm.S]"
     );
     regs.advancePC();
 
@@ -240,10 +307,10 @@ bool AssemblyEngine::SIM_CMP_JMP(
     bool taken = false;
     if      (jumpType == "JE"  || jumpType == "JZ")  taken = ZF;
     else if (jumpType == "JNE")                       taken = !ZF;
-    else if (jumpType == "JL")                        taken = (SF != OF);
-    else if (jumpType == "JG")                        taken = (!ZF && SF == OF);
-    else if (jumpType == "JLE")                       taken = (ZF || SF != OF);
-    else if (jumpType == "JGE")                       taken = (SF == OF);
+    else if (jumpType == "JL")                        taken = comparison < 0;
+    else if (jumpType == "JG")                        taken = comparison > 0;
+    else if (jumpType == "JLE")                       taken = comparison <= 0;
+    else if (jumpType == "JGE")                       taken = comparison >= 0;
 
     logInstruction(
         pcToHex(regs.getPC()),

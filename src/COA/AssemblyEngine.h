@@ -17,6 +17,7 @@
 #define ASSEMBLY_ENGINE_H
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <cmath>
@@ -24,19 +25,27 @@
 #include "../shared/JsonWriter.h"
 using namespace std;
 
+struct IntegerDivisionResult {
+    long long quotient;
+    long long remainder;
+};
+
 // ════════════════════════════════════════════════════════════
 // [COA CO2 - Task 2: AssemblyEngine Class]
 //
-// Simulates an x86-64 instruction pipeline for drone
-// coordinate and displacement computation.
+// Connects drone computations to the x86-64 assembly routines and
+// maintains the educational register and instruction-trace model.
 //
 // Displacement calculation uses the separate DisplacementAsm.S file.
 // Two additional checks use REAL inline x86-64 assembly:
 //   1. asmAddCoordinates  — uses actual ADD instruction
 //   2. asmSubCoordinates  — uses actual SUB instruction
 //
-// All other operations are C++ simulations of assembly
-// logic with matching register semantics.
+// CO3 ADD/SUB/CMP, ADD-and-shift and Booth multiplication,
+// shift-and-subtract division, string operations, and pipeline
+// schedule generation use Co3Asm.S.
+// The C++ layer validates inputs, manages strings, logs results,
+// and models the register/instruction behavior for the application.
 // ════════════════════════════════════════════════════════════
 class AssemblyEngine {
 private:
@@ -63,17 +72,17 @@ public:
 
     // ── Simulated Assembly Instructions [COA CO2] ─────────────
 
-    // MOV simulation — loads value into named register slot
+    // MOV operation — loads value into named register slot
     void SIM_MOV(long long& dest, long long src,
                  const string& destReg,
                  const string& srcOperand);
 
-    // ADD simulation — dest = dest + src, logs instruction
+    // Assembly ADD — dest = dest + src, logs instruction
     long long SIM_ADD(long long dest, long long src,
                       const string& destReg,
                       const string& srcOperand);
 
-    // SUB simulation — dest = dest - src, logs instruction
+    // Assembly SUB — dest = dest - src, logs instruction
     long long SIM_SUB(long long dest, long long src,
                       const string& destReg,
                       const string& srcOperand);
@@ -81,6 +90,18 @@ public:
     // [COA CO3 - Task 3] Multiplication using successive addition.
     long long SIM_MUL_SUCCESSIVE(long long multiplicand,
                                  long long multiplier);
+
+    // [COA CO3 - Task 3] Signed multiplication using ADD and logical shifts.
+    long long SIM_MUL_ADD_SHIFT(long long multiplicand,
+                                long long multiplier);
+
+    // [COA CO3 - Task 3] Signed multiplication using Booth recoding.
+    long long SIM_MUL_BOOTH(long long multiplicand,
+                            long long multiplier);
+
+    // [COA CO3 - Task 3] Signed integer division by binary shift-and-subtract.
+    IntegerDivisionResult SIM_DIV_SHIFT_SUB(long long dividend,
+                                            long long divisor);
 
     // [COA CO3 - Task 3] String operations using 64-bit string instructions.
     size_t asmStringLength(const string& text);

@@ -314,7 +314,7 @@ bool CityGrid::isAdjacent(int r1,int c1,int r2,int c2) const {
 
 // ════════════════════════════════════════════════════════════
 // JSON EXPORT
-// Writes grid state to website/data/grid.json
+// Writes grid state to grid.json
 // Website reads this file every 1 second
 // ════════════════════════════════════════════════════════════
 void CityGrid::exportToJson(int rows, int cols) const {

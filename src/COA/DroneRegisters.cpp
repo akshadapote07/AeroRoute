@@ -301,7 +301,7 @@ void DroneRegisters::displayRegisterState(
 
 // ════════════════════════════════════════════════════════════
 // exportToJson
-// Writes register state to website/data/registers.json
+// Writes register state to registers.json
 // ════════════════════════════════════════════════════════════
 void DroneRegisters::exportToJson(
     const vector<InstructionData>& instructions,

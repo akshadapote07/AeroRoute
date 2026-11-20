@@ -3,5 +3,6 @@
 
 void verifyCgCo4Transform();
 void runCgCo4(int argc, char** argv);
+bool consumeCgCo4BackToMenuRequest();
 
 #endif

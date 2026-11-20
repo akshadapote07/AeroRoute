@@ -4,13 +4,13 @@
  * PROJECT     : AeroRoute — Autonomous Drone Delivery Simulator
  * DESCRIPTION : Lightweight JSON file writer.
  *               No external libraries needed.
- *               Every subject uses this to write output
- *               that the website dashboard reads.
+ *               Every subject uses this to write JSON output.
  *
  *               HOW IT WORKS:
  *               Each write function opens a file, writes
  *               formatted JSON, and closes it.
- *               The website polls these files every 1 second.
+ *               The integrated application writes these files
+ *               to the project root.
  *
  * ============================================================
  */

@@ -119,6 +119,7 @@ private:
     int activeCols;
     bool task3EffectsEnabled;
     GLuint cityTexture;
+    bool   threeDViewEnabled;
 
     // ── City grid data (matches CityGrid from PL) ─────────────
     int   gridCells[GRID_ROWS][GRID_COLS];
@@ -136,6 +137,7 @@ private:
     Point2D trafficPos;
     float   droneAngle;   // heading in degrees
     float   droneScale;   // zoom level
+    int     flightDroneCount;
 
     // ── Transformation state [CG CO3] ─────────────────────────
     float   translateX;
@@ -165,6 +167,18 @@ private:
     bool collisionHold;
     string simulationStatus;
     function<void(int, int, bool, bool)> simulationCallback;
+    float deliveryPulseElapsed;
+    bool deliveryPulseActive;
+    float deliveryPulseScale;
+    bool deliveryPopupVisible;
+    bool completionPopupPending;
+    float completionPopupElapsed;
+    std::function<void(int)> deliveryPopupCallback;
+    double batteryPercentage;
+    bool chargingInProgress;
+    float chargingPauseElapsed;
+    float chargingPauseDuration;
+    std::function<void()> chargingCompleteCallback;
 
     // ── Graphics data for JSON export ─────────────────────────
     GraphicsData gfxData;
@@ -174,6 +188,12 @@ private:
     void drawGridLines();
     void drawTask3TexturedSurface();
     void drawTask3Lighting();
+    void draw3DCityMap();
+    void drawExtrudedNode(int row, int col);
+    void drawDeliveryPopup();
+    void drawViewModeButton();
+    void beginDashboardOverlay();
+    void endDashboardOverlay();
     void drawCell(int row, int col);
     void drawWarehouseNode(float cx, float cy);
     void drawCustomerNode(float cx, float cy);
@@ -213,11 +233,23 @@ public:
     void setDronePosition(int row, int col, float angle);
     void setSimulationPaths(const vector<pair<int, int>>& deliveryPath,
                             const vector<pair<int, int>>& trafficPath);
+    void setFlightDroneCount(int count);
     void setDeliveryWaypointIndex(size_t waypointIndex);
     void setSimulationCallback(
         function<void(int, int, bool, bool)> callback);
     void setTask3EffectsEnabled(bool enabled);
     void toggleTask3Effects();
+    void toggle3DView();
+    void set3DViewEnabled(bool enabled);
+    void showDeliveryPopup();
+    void hideDeliveryPopup();
+    bool isDeliveryPopupVisible() const;
+    void setDeliveryPopupCallback(
+        std::function<void(int)> callback);
+    void restartDeliverySimulation();
+    void setBatteryStatus(double percentage, bool charging);
+    void pauseSimulationForCharging(
+        float seconds, std::function<void()> onComplete);
 
     // ════════════════════════════════════════════════════════
     // TASK 1 — Graphics Primitives [CG CO1, CO2]
@@ -304,6 +336,7 @@ public:
     static void displayCallback();
     static void reshapeCallback(int w, int h);
     static void keyboardCallback(unsigned char key, int x, int y);
+    static void mouseCallback(int button, int state, int x, int y);
     static void timerCallback(int value);
 
     // Singleton accessor for GLUT callbacks

@@ -9,6 +9,7 @@
  */
 
 #include "Drone.h"
+#include "../shared/Constants.h"
 #include <cmath>
 #include <iomanip>
 #include <stdexcept>
@@ -196,7 +197,7 @@ void DeliveryDrone::fly(int targetRow, int targetCol) {
     headingDeg = atan2(dy, dx) * 180.0 / 3.14159265;
 
     // Drain battery proportional to distance
-    double drain = dist * 2.5;
+    double drain = dist * 100.0 / DRONE_BATTERY_RANGE_GRID_UNITS;
     drainBattery(drain);
     status = "FLYING";
     altitudeM = 120.0;
@@ -218,7 +219,9 @@ void DeliveryDrone::fly(int targetRow, int targetCol) {
 
 string DeliveryDrone::getModelName()    const { return "AR-D1 DeliveryDrone"; }
 double      DeliveryDrone::getMaxPayloadKg() const { return 15.0; }
-int         DeliveryDrone::getMaxRangeUnits()const { return 8; }
+int         DeliveryDrone::getMaxRangeUnits()const {
+    return DRONE_BATTERY_RANGE_GRID_UNITS;
+}
 
 void DeliveryDrone::displaySpecs() const {
     cout << "  Parachute: "
@@ -227,7 +230,7 @@ void DeliveryDrone::displaySpecs() const {
 
 // ════════════════════════════════════════════════════════════
 // ScoutDrone Implementation
-// [PSOOP CO2 - Task 2: Different fly() — lighter, faster]
+// [PSOOP CO2 - Task 2: Different fly() — higher-altitude reconnaissance]
 // ════════════════════════════════════════════════════════════
 ScoutDrone::ScoutDrone(const string& serial,
                        int startRow, int startCol,
@@ -254,7 +257,8 @@ void ScoutDrone::fly(int targetRow, int targetCol) {
     double dist = sqrt(dx*dx + dy*dy);
 
     headingDeg = atan2(dy, dx) * 180.0 / 3.14159265;
-    drainBattery(dist * 1.2); // lighter drain
+    drainBattery(
+        dist * 100.0 / DRONE_BATTERY_RANGE_GRID_UNITS);
     status    = "FLYING";
     altitudeM = 180.0; // flies higher for recon
 
@@ -286,7 +290,9 @@ void ScoutDrone::scanArea(int row, int col) {
 
 string ScoutDrone::getModelName()    const { return "AR-S1 ScoutDrone"; }
 double      ScoutDrone::getMaxPayloadKg() const { return 0.5; }
-int         ScoutDrone::getMaxRangeUnits()const { return 15; }
+int         ScoutDrone::getMaxRangeUnits()const {
+    return DRONE_BATTERY_RANGE_GRID_UNITS;
+}
 
 void ScoutDrone::displaySpecs() const {
     cout << "  Camera   : "
@@ -311,7 +317,7 @@ HeavyDrone::HeavyDrone(const string& serial,
 
 HeavyDrone::~HeavyDrone() {}
 
-// [PSOOP CO2 - Heavy fly() — most battery drain]
+// [PSOOP CO2 - Heavy fly() — heavy-lift flight profile]
 void HeavyDrone::fly(int targetRow, int targetCol) {
     cout << "\n[PSOOP] HeavyDrone " << serialNumber
               << " lifting: (" << currentRow << ","
@@ -323,7 +329,8 @@ void HeavyDrone::fly(int targetRow, int targetCol) {
     double dist = sqrt(dx*dx + dy*dy);
 
     headingDeg = atan2(dy, dx) * 180.0 / 3.14159265;
-    drainBattery(dist * 4.5); // heaviest drain
+    drainBattery(
+        dist * 100.0 / DRONE_BATTERY_RANGE_GRID_UNITS);
     status    = "FLYING";
     altitudeM = 80.0; // flies lower due to weight
 
@@ -342,7 +349,9 @@ void HeavyDrone::fly(int targetRow, int targetCol) {
 
 string HeavyDrone::getModelName()    const { return "AR-H1 HeavyDrone"; }
 double      HeavyDrone::getMaxPayloadKg() const { return 50.0; }
-int         HeavyDrone::getMaxRangeUnits()const { return 4; }
+int         HeavyDrone::getMaxRangeUnits()const {
+    return DRONE_BATTERY_RANGE_GRID_UNITS;
+}
 
 void HeavyDrone::displaySpecs() const {
     cout << "  Rotors   : " << numRotors     << "\n";

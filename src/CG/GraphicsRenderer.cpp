@@ -33,8 +33,10 @@ GraphicsRenderer::GraphicsRenderer()
       gridOriginX(-230.0f), gridOriginY(230.0f),
       activeRows(GRID_ROWS), activeCols(GRID_COLS),
       task3EffectsEnabled(false), cityTexture(0),
+      threeDViewEnabled(false),
       routeType("SLL"),
       droneAngle(0.0f), droneScale(1.0f),
+      flightDroneCount(1),
       translateX(0.0f), translateY(0.0f),
       rotationAngle(0.0f), scaleFactor(1.0f),
       vpXmin(-200.0f), vpXmax(200.0f),
@@ -45,7 +47,12 @@ GraphicsRenderer::GraphicsRenderer()
     lastDeliveryNode(0), lastTrafficNode(0), deliveryWaypointIndex(0),
     trafficDirection(1),
     simulationActive(false), collisionHold(false),
-    simulationStatus("READY")
+    simulationStatus("READY"),
+    deliveryPulseElapsed(0.0f), deliveryPulseActive(false),
+    deliveryPulseScale(1.0f), deliveryPopupVisible(false),
+    completionPopupPending(false), completionPopupElapsed(0.0f),
+    batteryPercentage(100.0), chargingInProgress(false),
+    chargingPauseElapsed(0.0f), chargingPauseDuration(0.0f)
 {
     // Initialise grid to empty
     for (int r = 0; r < GRID_ROWS; r++)
@@ -167,6 +174,13 @@ void GraphicsRenderer::setSimulationPaths(
     clippedRouteDirty = true;
 }
 
+void GraphicsRenderer::setFlightDroneCount(int count) {
+    if (count < 1 || count > 10) {
+        throw out_of_range("The flight formation must contain 1 to 10 drones.");
+    }
+    flightDroneCount = count;
+}
+
 void GraphicsRenderer::setDeliveryWaypointIndex(size_t waypointIndex) {
     if (deliveryGridPath.empty() ||
         waypointIndex >= deliveryGridPath.size()) {
@@ -190,6 +204,78 @@ void GraphicsRenderer::toggleTask3Effects() {
     task3EffectsEnabled = !task3EffectsEnabled;
     cout << "[CG CO6 - Task 3] Texture and lighting effects "
          << (task3EffectsEnabled ? "enabled" : "disabled") << ".\n";
+}
+
+void GraphicsRenderer::toggle3DView() {
+    threeDViewEnabled = !threeDViewEnabled;
+    cout << "[CG CO4] "
+         << (threeDViewEnabled
+                 ? "Pseudo-3D textured city view enabled."
+                 : "2D city view enabled.")
+         << "\n";
+}
+
+void GraphicsRenderer::set3DViewEnabled(bool enabled) {
+    threeDViewEnabled = enabled;
+}
+
+void GraphicsRenderer::showDeliveryPopup() {
+    deliveryPopupVisible = true;
+}
+
+void GraphicsRenderer::hideDeliveryPopup() {
+    deliveryPopupVisible = false;
+}
+
+bool GraphicsRenderer::isDeliveryPopupVisible() const {
+    return deliveryPopupVisible;
+}
+
+void GraphicsRenderer::setDeliveryPopupCallback(
+    function<void(int)> callback) {
+    deliveryPopupCallback = callback;
+}
+
+void GraphicsRenderer::restartDeliverySimulation() {
+    hideDeliveryPopup();
+    completionPopupPending = false;
+    completionPopupElapsed = 0.0f;
+    batteryPercentage = 100.0;
+    chargingInProgress = false;
+    chargingPauseElapsed = 0.0f;
+    chargingPauseDuration = 0.0f;
+    chargingCompleteCallback = {};
+    deliveryPulseActive = false;
+    deliveryPulseElapsed = 0.0f;
+    deliveryPulseScale = 1.0f;
+    deliveryDistance = 0.0f;
+    lastDeliveryNode = 0;
+    simulationStatus = "READY";
+    if (!routePoints.empty()) {
+        dronePos = routePoints.front();
+    }
+    flightDroneCount = min(10, flightDroneCount + 1);
+    simulationActive = !routePoints.empty();
+    cout << "[CG] New drone queued. Active formation: "
+         << flightDroneCount << ".\n";
+}
+
+void GraphicsRenderer::setBatteryStatus(double percentage, bool charging) {
+    batteryPercentage = max(0.0, min(100.0, percentage));
+    chargingInProgress = charging;
+}
+
+void GraphicsRenderer::pauseSimulationForCharging(
+    float seconds, function<void()> onComplete) {
+    if (!isfinite(seconds) || seconds <= 0.0f) {
+        throw invalid_argument("Charging pause duration must be positive.");
+    }
+    if (chargingPauseDuration > 0.0f) {
+        throw logic_error("A charging pause is already active.");
+    }
+    chargingPauseElapsed = 0.0f;
+    chargingPauseDuration = seconds;
+    chargingCompleteCallback = move(onComplete);
 }
 
 // ── Coordinate conversion ─────────────────────────────────────
@@ -377,7 +463,9 @@ void GraphicsRenderer::drawDroneBody(
     glPushMatrix();
     glTranslatef(cx, cy, 0.0f);
     glRotatef(angle, 0.0f, 0.0f, 1.0f); // rotation transform
-    glScalef(droneScale, droneScale, 1.0f); // scale transform
+    glScalef(droneScale * deliveryPulseScale,
+             droneScale * deliveryPulseScale,
+             1.0f); // scale transform
 
     float armLen = cellSize * 0.38f;
     float armOff = armLen * 0.707f; // cos/sin 45 degrees
@@ -554,6 +642,121 @@ void GraphicsRenderer::drawTask3Lighting() {
     glDisable(GL_BLEND);
 }
 
+// [CG CO4 - Presentation enhancement: pseudo-3D textured city]
+void GraphicsRenderer::drawExtrudedNode(int row, int col) {
+    const Point2D center = gridToGL(row, col);
+    const int type = gridCells[row][col];
+    if (type == CELL_EMPTY) return;
+
+    float height = cellSize * 0.45f;
+    float red = 0.28f;
+    float green = 0.48f;
+    float blue = 0.72f;
+    if (type == CELL_WAREHOUSE) {
+        height = cellSize * 0.78f;
+        red = 0.95f; green = 0.42f; blue = 0.12f;
+    } else if (type == CELL_CHARGING) {
+        height = cellSize * 0.38f;
+        red = 0.12f; green = 0.78f; blue = 0.38f;
+    } else if (type == CELL_CUSTOMER) {
+        height = cellSize * 0.62f;
+        red = 0.12f; green = 0.52f; blue = 0.95f;
+    } else if (type == CELL_OBSTACLE) {
+        height = cellSize * 0.92f;
+        red = 0.68f; green = 0.12f; blue = 0.12f;
+    }
+
+    const float halfWidth = cellSize * 0.34f;
+    const float halfDepth = cellSize * 0.18f;
+    const float baseY = center.y - halfDepth;
+    const float topY = baseY + height;
+
+    glBegin(GL_QUADS);
+        glColor3f(red * 0.62f, green * 0.62f, blue * 0.62f);
+        glVertex2f(center.x - halfWidth, baseY);
+        glVertex2f(center.x - halfWidth, topY);
+        glVertex2f(center.x - halfWidth + halfDepth, topY);
+        glVertex2f(center.x - halfWidth + halfDepth, baseY);
+
+        glColor3f(red, green, blue);
+        glVertex2f(center.x - halfWidth + halfDepth, baseY);
+        glVertex2f(center.x - halfWidth + halfDepth, topY);
+        glVertex2f(center.x + halfWidth, topY - halfDepth);
+        glVertex2f(center.x + halfWidth, baseY - halfDepth);
+    glEnd();
+
+    glBegin(GL_QUADS);
+        glColor3f(min(1.0f, red + 0.20f),
+                  min(1.0f, green + 0.20f),
+                  min(1.0f, blue + 0.20f));
+        glVertex2f(center.x - halfWidth + halfDepth, topY);
+        glVertex2f(center.x - halfWidth, topY - halfDepth);
+        glVertex2f(center.x + halfWidth - halfDepth, topY - halfDepth);
+        glVertex2f(center.x + halfWidth, topY);
+    glEnd();
+
+    glColor3f(1.0f, 1.0f, 0.8f);
+    glBegin(GL_LINES);
+        glVertex2f(center.x - halfWidth, topY);
+        glVertex2f(center.x + halfWidth, topY);
+    glEnd();
+}
+
+void GraphicsRenderer::draw3DCityMap() {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    const float right = gridOriginX + activeCols * cellSize;
+    const float bottom = gridOriginY - activeRows * cellSize;
+
+    glBegin(GL_QUADS);
+        glColor3f(0.04f, 0.16f, 0.23f);
+        glVertex2f(gridOriginX - cellSize * 0.12f,
+                   gridOriginY + cellSize * 0.12f);
+        glVertex2f(right + cellSize * 0.12f,
+                   gridOriginY + cellSize * 0.12f);
+        glColor3f(0.10f, 0.31f, 0.38f);
+        glVertex2f(right + cellSize * 0.12f, bottom - cellSize * 0.12f);
+        glVertex2f(gridOriginX - cellSize * 0.12f,
+                   bottom - cellSize * 0.12f);
+    glEnd();
+
+    if (cityTexture == 0) {
+        drawTask3TexturedSurface();
+    } else {
+        drawTask3TexturedSurface();
+    }
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    for (int row = 0; row < activeRows; ++row) {
+        for (int col = 0; col < activeCols; ++col) {
+            if ((row + col) % 2 == 0) {
+                const Point2D c = gridToGL(row, col);
+                glBegin(GL_QUADS);
+                    glColor4f(0.10f, 0.65f, 0.72f, 0.10f);
+                    glVertex2f(c.x - cellSize * 0.45f,
+                               c.y - cellSize * 0.45f);
+                    glVertex2f(c.x + cellSize * 0.45f,
+                               c.y - cellSize * 0.45f);
+                    glVertex2f(c.x + cellSize * 0.45f,
+                               c.y + cellSize * 0.45f);
+                    glVertex2f(c.x - cellSize * 0.45f,
+                               c.y + cellSize * 0.45f);
+                glEnd();
+            }
+        }
+    }
+
+    for (int row = 0; row < activeRows; ++row) {
+        for (int col = 0; col < activeCols; ++col) {
+            drawExtrudedNode(row, col);
+        }
+    }
+
+    glDisable(GL_BLEND);
+}
+
 // ════════════════════════════════════════════════════════════
 // DRAW CELL — dispatches to correct node type
 // ════════════════════════════════════════════════════════════
@@ -627,9 +830,9 @@ void GraphicsRenderer::drawHUD() {
     float hy =  330.0f;
 
     // HUD background quad
-    drawQuad(hx, hy, 190.0f, 180.0f,
+    drawQuad(hx, hy, 190.0f, 220.0f,
              0.05f, 0.08f, 0.15f, true);
-    drawQuad(hx, hy, 190.0f, 180.0f,
+    drawQuad(hx, hy, 190.0f, 220.0f,
              0.0f, 0.4f, 0.8f, false);
 
     glColor3f(0.0f, 0.8f, 1.0f);
@@ -667,6 +870,122 @@ void GraphicsRenderer::drawHUD() {
     glColor3f(0.9f, 0.88f, 0.68f);
     hudText(hx + 6, hy - 148,
         "Cut endpoints: " + to_string(clippedEndpoints));
+    hudText(hx + 6, hy - 164,
+        "Drones in formation: " + to_string(flightDroneCount));
+    glColor3f(chargingInProgress ? 0.35f : batteryPercentage < 25.0 ? 1.0f : 0.35f,
+              chargingInProgress ? 1.0f : batteryPercentage < 25.0 ? 0.25f : 0.9f,
+              0.35f);
+    hudText(hx + 6, hy - 182,
+        string(chargingInProgress ? "Charging: " : "Battery: ") +
+        to_string(static_cast<int>(round(batteryPercentage))) + "%");
+    drawQuad(hx + 6, hy - 190, 178.0f, 10.0f,
+             0.15f, 0.20f, 0.27f, true);
+    const float batteryWidth =
+        178.0f * static_cast<float>(batteryPercentage / 100.0);
+    drawQuad(hx + 6, hy - 190, batteryWidth, 10.0f,
+             chargingInProgress ? 0.20f : batteryPercentage < 25.0 ? 0.9f : 0.15f,
+             chargingInProgress ? 0.95f : batteryPercentage < 25.0 ? 0.25f : 0.82f,
+             0.35f, true);
+}
+
+void GraphicsRenderer::drawViewModeButton() {
+    beginDashboardOverlay();
+    const float buttonWidth = min(
+        176.0f, max(0.0f, static_cast<float>(windowWidth) - 16.0f));
+    const float x = max(
+        8.0f, static_cast<float>(windowWidth) - buttonWidth - 8.0f);
+    const float y = static_cast<float>(windowHeight) - 16.0f;
+
+    drawQuad(x, y, buttonWidth, 42.0f,
+             threeDViewEnabled ? 0.10f : 0.16f,
+             threeDViewEnabled ? 0.42f : 0.28f,
+             threeDViewEnabled ? 0.72f : 0.52f, true);
+    drawQuad(x, y, buttonWidth, 42.0f,
+             0.35f, 0.75f, 1.00f, false);
+
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glRasterPos2f(x + 8.0f, y - 27.0f);
+    const string label = threeDViewEnabled
+        ? "3D VIEW  |  SWITCH TO 2D"
+        : "2D VIEW  |  SWITCH TO 3D";
+    for (char character : label) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, character);
+    }
+    endDashboardOverlay();
+}
+
+void GraphicsRenderer::beginDashboardOverlay() {
+    glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
+    glDisable(GL_DEPTH_TEST);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glOrtho(0.0, static_cast<double>(windowWidth),
+            0.0, static_cast<double>(windowHeight), -1.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+}
+
+void GraphicsRenderer::endDashboardOverlay() {
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopAttrib();
+}
+
+void GraphicsRenderer::drawDeliveryPopup() {
+    if (!deliveryPopupVisible) return;
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    drawQuad(-280.0f, 155.0f, 560.0f, 310.0f,
+             0.01f, 0.03f, 0.08f, true);
+    drawQuad(-160.0f, 120.0f, 320.0f, 220.0f,
+             0.06f, 0.11f, 0.18f, true);
+    drawQuad(-160.0f, 120.0f, 320.0f, 220.0f,
+             0.20f, 0.82f, 0.95f, false);
+
+    glColor3f(0.20f, 1.00f, 0.55f);
+    glRasterPos2f(-82.0f, 82.0f);
+    const char* title = "DELIVERY COMPLETED";
+    for (const char* character = title; *character; ++character) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *character);
+    }
+
+    glColor3f(0.82f, 0.90f, 1.00f);
+    glRasterPos2f(-118.0f, 48.0f);
+    const char* status = "Package delivered successfully";
+    for (const char* character = status; *character; ++character) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *character);
+    }
+
+    drawQuad(-125.0f, -20.0f, 115.0f, 46.0f,
+             0.08f, 0.32f, 0.55f, true);
+    drawQuad(-125.0f, -20.0f, 115.0f, 46.0f,
+             0.30f, 0.75f, 1.00f, false);
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glRasterPos2f(-112.0f, -48.0f);
+    const char* back = "Back to Menu";
+    for (const char* character = back; *character; ++character) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *character);
+    }
+
+    drawQuad(10.0f, -20.0f, 115.0f, 46.0f,
+             0.06f, 0.58f, 0.36f, true);
+    drawQuad(10.0f, -20.0f, 115.0f, 46.0f,
+             0.35f, 1.00f, 0.65f, false);
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glRasterPos2f(20.0f, -48.0f);
+    const char* send = "Send Another";
+    for (const char* character = send; *character; ++character) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *character);
+    }
+
+    glDisable(GL_BLEND);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1032,18 +1351,23 @@ void GraphicsRenderer::renderScene() {
     // Apply global view scale (zoom)
     glScalef(scaleFactor, scaleFactor, 1.0f);
 
-    if (task3EffectsEnabled) {
-        drawTask3TexturedSurface();
-        drawTask3Lighting();
+    if (threeDViewEnabled) {
+        draw3DCityMap();
+        if (task3EffectsEnabled) drawTask3Lighting();
+    } else {
+        if (task3EffectsEnabled) {
+            drawTask3TexturedSurface();
+            drawTask3Lighting();
+        }
+
+        // Draw grid lines
+        drawGridLines();
+
+        // Draw all non-empty cells
+        for (int r = 0; r < activeRows; r++)
+            for (int c = 0; c < activeCols; c++)
+                drawCell(r, c);
     }
-
-    // Draw grid lines
-    drawGridLines();
-
-    // Draw all non-empty cells
-    for (int r = 0; r < activeRows; r++)
-        for (int c = 0; c < activeCols; c++)
-            drawCell(r, c);
 
     // Draw clipped route path
     clipAndDrawRoute();
@@ -1061,8 +1385,25 @@ void GraphicsRenderer::renderScene() {
                    5.0f, r, g, b, true);
     }
 
-    // Draw drone
-    drawDroneBody(dronePos.x, dronePos.y, droneAngle);
+    const float angleRadians = droneAngle * 3.14159265f / 180.0f;
+    const float directionX = cosf(angleRadians);
+    const float directionY = sinf(angleRadians);
+    const float sideX = -directionY;
+    const float sideY = directionX;
+    const float formationSpacing = cellSize * 0.68f;
+    for (int index = 0; index < flightDroneCount; ++index) {
+        const int row = index / 3;
+        const int column = index % 3;
+        const int columnsInRow = min(3, flightDroneCount - row * 3);
+        const float lateralOffset =
+            (column - (columnsInRow - 1) / 2.0f) * formationSpacing;
+        const float trailingOffset = -row * formationSpacing;
+        const float x = dronePos.x + sideX * lateralOffset +
+                        directionX * trailingOffset;
+        const float y = dronePos.y + sideY * lateralOffset +
+                        directionY * trailingOffset;
+        drawDroneBody(x, y, droneAngle);
+    }
     if (!trafficPoints.empty()) drawTrafficDrone();
 
     // Draw viewport boundary (clipping window visible)
@@ -1076,6 +1417,8 @@ void GraphicsRenderer::renderScene() {
     // Draw HUD and legend
     drawHUD();
     drawLegend();
+    drawViewModeButton();
+    drawDeliveryPopup();
 
     glutSwapBuffers();
 }
@@ -1138,6 +1481,10 @@ void GraphicsRenderer::keyboardCallback(
         case 'T':
             r->toggleTask3Effects();
             break;
+        // [CG CO4 - Presentation: toggle 2D/pseudo-3D city]
+        case '3':
+            r->toggle3DView();
+            break;
         // Quit
         case 27: // ESC
             cout << "[CG] Window closed.\n";
@@ -1147,6 +1494,59 @@ void GraphicsRenderer::keyboardCallback(
 
     r->exportToJson();
     glutPostRedisplay();
+}
+
+void GraphicsRenderer::mouseCallback(
+    int button, int state, int x, int y)
+{
+    if (button != GLUT_LEFT_BUTTON || state != GLUT_DOWN) return;
+    GraphicsRenderer* r = g_instance;
+    if (!r) return;
+
+    const int viewButtonWidth = min(176, max(0, r->windowWidth - 16));
+    const int viewButtonLeft = max(
+        8, r->windowWidth - viewButtonWidth - 8);
+    if (x >= viewButtonLeft &&
+        x <= viewButtonLeft + viewButtonWidth &&
+        y >= 16 && y <= 58) {
+        r->toggle3DView();
+        glutPostRedisplay();
+        return;
+    }
+
+    const float aspect =
+        r->windowWidth > 0
+            ? static_cast<float>(r->windowWidth) /
+              static_cast<float>(r->windowHeight)
+            : 1.0f;
+    const float worldX =
+        (static_cast<float>(x) / r->windowWidth - 0.5f) *
+        900.0f * aspect;
+    const float worldY =
+        (0.5f - static_cast<float>(y) / r->windowHeight) *
+        700.0f;
+
+    if (!r->deliveryPopupVisible) return;
+
+    if (worldX >= -125.0f && worldX <= -10.0f &&
+        worldY <= -20.0f && worldY >= -66.0f) {
+        cout << "[CG] Returning to the main/menu platform.\n";
+        if (r->deliveryPopupCallback) {
+            r->deliveryPopupCallback(1);
+        }
+        glutLeaveMainLoop();
+        return;
+    }
+
+    if (worldX >= 10.0f && worldX <= 125.0f &&
+        worldY <= -20.0f && worldY >= -66.0f) {
+        cout << "[CG] User selected send another drone.\n";
+        r->restartDeliverySimulation();
+        if (r->deliveryPopupCallback) {
+            r->deliveryPopupCallback(2);
+        }
+        glutPostRedisplay();
+    }
 }
 
 void GraphicsRenderer::timerCallback(int) {
@@ -1190,6 +1590,49 @@ Point2D GraphicsRenderer::pointAlongPath(
 }
 
 void GraphicsRenderer::updateSimulation() {
+    if (chargingPauseDuration > 0.0f) {
+        chargingPauseElapsed += 0.033f;
+        if (chargingPauseElapsed >= chargingPauseDuration) {
+            chargingPauseElapsed = 0.0f;
+            chargingPauseDuration = 0.0f;
+            function<void()> onComplete =
+                move(chargingCompleteCallback);
+            chargingCompleteCallback = {};
+            if (onComplete) onComplete();
+        }
+        return;
+    }
+
+    if (completionPopupPending && !simulationActive) {
+        completionPopupElapsed += 0.033f;
+        if (completionPopupElapsed >= 2.0f) {
+            completionPopupPending = false;
+            showDeliveryPopup();
+            glutPostRedisplay();
+        }
+        return;
+    }
+
+    if (deliveryPulseActive) {
+        deliveryPulseElapsed += 0.033f;
+
+        if (deliveryPulseElapsed < 0.5f) {
+            deliveryPulseScale =
+                1.0f + 0.8f * (deliveryPulseElapsed / 0.5f);
+        } else if (deliveryPulseElapsed < 2.5f) {
+            deliveryPulseScale = 1.8f;
+        } else if (deliveryPulseElapsed < 3.0f) {
+            deliveryPulseScale =
+                1.8f - 0.8f * ((deliveryPulseElapsed - 2.5f) / 0.5f);
+        } else {
+            deliveryPulseScale = 1.0f;
+            deliveryPulseActive = false;
+        }
+
+        // Hold at the customer while it enlarges, remains large, and shrinks.
+        if (deliveryPulseActive) return;
+    }
+
     if (!simulationActive) return;
 
     const float deltaSeconds = 0.033f;
@@ -1278,6 +1721,14 @@ void GraphicsRenderer::updateSimulation() {
         ++lastDeliveryNode;
         const bool delivered = lastDeliveryNode ==
             static_cast<int>(deliveryWaypointIndex);
+        if (delivered) {
+            deliveryPulseActive = true;
+            deliveryPulseElapsed = 0.0f;
+            deliveryPulseScale = 1.0f;
+            simulationStatus = "DELIVERING";
+            cout << "[CG CO3] Delivery reached: drone enlarging for 2 seconds,"
+                    " then shrinking.\n";
+        }
         if (simulationCallback) {
             simulationCallback(
                 deliveryGridPath[lastDeliveryNode].first,
@@ -1291,6 +1742,8 @@ void GraphicsRenderer::updateSimulation() {
         simulationStatus = deliveryWaypointIndex + 1 <
                 deliveryGridPath.size()
             ? "RETURNED" : "DELIVERED";
+        completionPopupElapsed = 0.0f;
+        completionPopupPending = true;
     }
 }
 
@@ -1352,6 +1805,7 @@ void GraphicsRenderer::launchWindow(
     glutDisplayFunc(displayCallback);
     glutReshapeFunc(reshapeCallback);
     glutKeyboardFunc(keyboardCallback);
+    glutMouseFunc(mouseCallback);
     glutTimerFunc(33, timerCallback, 0);
 
     cout << "\n[CG] OpenGL window launched.\n";
@@ -1362,6 +1816,8 @@ void GraphicsRenderer::launchWindow(
     cout << "  C/V      — shrink/grow clip viewport\n";
     cout << "  The dashed rectangle is the clipping window; yellow dots mark clipped intersections.\n";
     cout << "  T        — toggle Task 3 surface texture and colored lights\n";
+    cout << "  3        — toggle 2D/pseudo-3D textured city view\n";
+    cout << "  2D/3D    — click the top-right view button\n";
     cout << "  J        — export JSON now\n";
     cout << "  ESC      — close window\n\n";
 

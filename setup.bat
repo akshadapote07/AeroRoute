@@ -15,8 +15,6 @@ echo.
 REM ── Create folder structure ──────────────────────────────────
 echo [1/5] Creating folder structure...
 
-mkdir website\data
-mkdir website\input
 mkdir src\shared
 mkdir src\PL
 mkdir src\COA
@@ -31,7 +29,7 @@ REM ── Create starter JSON files ──────────────�
 echo [2/5] Creating starter JSON files...
 
 REM data/grid.json
-if not exist website\data\grid.json (
+if not exist grid.json (
 (
 echo {
 echo   "source": "awaiting_cpp",
@@ -52,11 +50,11 @@ echo     [0,0,0,0,0,0,0,0,0,0]
 echo   ],
 echo   "labels": {}
 echo }
-)> website\data\grid.json
+)> grid.json
 )
 
 REM data/route.json
-if not exist website\data\route.json (
+if not exist route.json (
 (
 echo {
 echo   "source": "awaiting_cpp",
@@ -65,11 +63,11 @@ echo   "node_count": 0,
 echo   "current_index": 0,
 echo   "waypoints": []
 echo }
-)> website\data\route.json
+)> route.json
 )
 
 REM data/telemetry.json
-if not exist website\data\telemetry.json (
+if not exist telemetry.json (
 (
 echo {
 echo   "source": "awaiting_cpp",
@@ -85,11 +83,11 @@ echo   "waypoint_total": null,
 echo   "drone_model": null,
 echo   "route_type": null
 echo }
-)> website\data\telemetry.json
+)> telemetry.json
 )
 
 REM data/registers.json
-if not exist website\data\registers.json (
+if not exist registers.json (
 (
 echo {
 echo   "source": "awaiting_cpp",
@@ -115,11 +113,11 @@ echo     "total": 0.0,
 echo     "asm_op": "none"
 echo   }
 echo }
-)> website\data\registers.json
+)> registers.json
 )
 
 REM data/mission.json
-if not exist website\data\mission.json (
+if not exist mission.json (
 (
 echo {
 echo   "source": "awaiting_cpp",
@@ -132,17 +130,17 @@ echo     "scale": 1.0,
 echo     "clipped_segments": 0
 echo   }
 echo }
-)> website\data\mission.json
+)> mission.json
 )
 
-REM input/user_input.json
-if not exist website\input\user_input.json (
+REM user_input.json
+if not exist user_input.json (
 (
 echo {
 echo   "command": "NONE",
 echo   "timestamp": 0
 echo }
-)> website\input\user_input.json
+)> user_input.json
 )
 
 echo       Done.
@@ -177,7 +175,7 @@ echo.
 echo ### Subject 2 — COA Lab
 echo ```
 echo cd src/COA
-echo g++ Subject2_Main.cpp DroneRegisters.cpp AssemblyEngine.cpp DisplacementAsm.S -o ../../build/subject2.exe -std=c++17
+echo g++ Subject2_Main.cpp DroneRegisters.cpp AssemblyEngine.cpp DisplacementAsm.S Co3Asm.S -o ../../build/subject2.exe -std=c++17
 echo ../../build/subject2.exe
 echo ```
 echo.
@@ -198,13 +196,10 @@ echo.
 echo ### Full Integrated System
 echo ```
 echo cd src/PL
-echo g++ ../main.cpp ../PL/CityGrid.cpp ../PL/RouteTracker.cpp ../PL/DeliveryScheduler.cpp ../COA/DroneRegisters.cpp ../COA/AssemblyEngine.cpp ../COA/DisplacementAsm.S ../CG/AeroRouteMenu.cpp ../CG/GraphicsRenderer.cpp ../PSOOP/Location.cpp ../PSOOP/Warehouse.cpp ../PSOOP/CustomerSite.cpp ../PSOOP/ChargingPad.cpp ../PSOOP/Package.cpp ../PSOOP/Drone.cpp -o ../../build/aeroroute.exe -std=c++17 -lfreeglut -lopengl32 -lglu32
+echo g++ ../main.cpp ../PL/CityGrid.cpp ../PL/Co4.cpp ../PL/RouteTracker.cpp ../PL/DeliveryScheduler.cpp ../COA/DroneRegisters.cpp ../COA/Co4.cpp ../COA/AssemblyEngine.cpp ../COA/DisplacementAsm.S ../COA/Co3Asm.S ../CG/AeroRouteMenu.cpp ../CG/Co4.cpp ../CG/GraphicsRenderer.cpp ../PSOOP/Location.cpp ../PSOOP/Warehouse.cpp ../PSOOP/CustomerSite.cpp ../PSOOP/ChargingPad.cpp ../PSOOP/Co4.cpp ../PSOOP/Package.cpp ../PSOOP/Drone.cpp -o ../../build/aeroroute.exe -std=c++17 -lfreeglut -lopengl32 -lglu32
 echo ../../build/aeroroutemain.exe
 echo ```
 echo.
-echo ### Website
-echo Open website/index.html with VS Code Live Server
-echo OR run: python -m http.server 8080 inside website/ folder
 ) > docs\README.md
 )
 
@@ -215,12 +210,11 @@ echo [5/5] Setup complete.
 echo.
 echo  ================================================
 echo   Folder structure created.
-echo   Starter JSON files created in website/data/
+echo   Starter JSON files created in the project root
 echo   README created in docs/
 echo  ================================================
 echo.
 echo  Next steps:
-echo  1. Open website/index.html with a local web server
-echo  2. Compile a subject from its src/PL, src/COA, src/CG, or src/PSOOP folder
+echo  1. Compile the integrated system from src/PL, or a subject from its module folder
 echo.
 pause
