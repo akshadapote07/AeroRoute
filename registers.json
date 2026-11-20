@@ -1,0 +1,85 @@
+{
+  "source": "cpp_subject2",
+  "RAX": 135,
+  "RBX": 1850,
+  "RCX": 4500,
+  "RDX": 8700,
+  "PC": 4212,
+  "IR": 4769728,
+  "SP": 140737488355327,
+  "flags": {
+    "ZF": 0,
+    "CF": 0,
+    "SF": 0,
+    "OF": 0,
+    "PF": 0
+  },
+  "instructions": [
+    {
+      "addr": "0x1040",
+      "op": "JZ",
+      "args": "target  ; Jump NOT TAKEN"
+    },
+    {
+      "addr": "0x1044",
+      "op": "ADD",
+      "args": "RAX, 15  ; 120 + 15 = 135"
+    },
+    {
+      "addr": "0x104C",
+      "op": "CMP",
+      "args": "RDX, 2000"
+    },
+    {
+      "addr": "0x1050",
+      "op": "JG",
+      "args": "target  ; Jump TAKEN"
+    },
+    {
+      "addr": "0x1054",
+      "op": "ADD",
+      "args": "RAX, 9  ; 0 + 9 = 9"
+    },
+    {
+      "addr": "0x1058",
+      "op": "ADD",
+      "args": "RAX, 9  ; 9 + 9 = 18"
+    },
+    {
+      "addr": "0x105C",
+      "op": "ADD",
+      "args": "RAX, 9  ; 18 + 9 = 27"
+    },
+    {
+      "addr": "0x1060",
+      "op": "ADD",
+      "args": "RAX, 9  ; 27 + 9 = 36"
+    },
+    {
+      "addr": "0x1064",
+      "op": "ADD",
+      "args": "RAX, 9  ; 36 + 9 = 45"
+    },
+    {
+      "addr": "0x1068",
+      "op": "ADD",
+      "args": "RAX, 9  ; 45 + 9 = 54"
+    },
+    {
+      "addr": "0x106C",
+      "op": "SCASB",
+      "args": "REPNE SCASB ; input length = 8"
+    },
+    {
+      "addr": "0x1070",
+      "op": "MOVSB",
+      "args": "REP MOVSB ; appended 6 bytes"
+    }
+  ],
+  "displacement": {
+    "dx": 5.0000,
+    "dy": 7.0000,
+    "total": 8.6023,
+    "asm_op": "SUB R4, R3 (deltaY dominant)"
+  }
+}
