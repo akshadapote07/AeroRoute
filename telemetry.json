@@ -1,14 +1,14 @@
 {
   "source": "cpp_subject1_2",
-  "mission_status": "DELIVERED",
-  "grid_row": 4,
+  "mission_status": "ACTIVE",
+  "grid_row": 3,
   "grid_col": 4,
-  "speed_ms": 15.00,
-  "altitude_m": 105,
-  "battery_pct": 70.00,
-  "heading_deg": 90,
-  "waypoint_current": 8,
-  "waypoint_total": 9,
+  "speed_ms": 18.50,
+  "altitude_m": 120,
+  "battery_pct": 82.50,
+  "heading_deg": 0,
+  "waypoint_current": 7,
+  "waypoint_total": 17,
   "drone_model": "AR-D1 DeliveryDrone",
   "route_type": "SLL"
 }

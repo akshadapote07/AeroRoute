@@ -20,7 +20,7 @@ void runPlCo4() {
         explicit ChainedLabelIndex(size_t bucketCount)
             : buckets(max<size_t>(bucketCount, 1)) {}
 
-        size_t bucketFor(const string& label) const {
+            size_t bucketFor(const string& label) const {
             size_t hash = 0;
             for (unsigned char character : label) {
                 hash = hash * 31 + character;
@@ -85,7 +85,7 @@ void runPlCo4() {
 
     cout << "  Search comparison counts on increasing datasets "
             "(target is the final label):\n"
-         << "    Items    Linear    Binary    Hash-chain\n";
+         << "    Items    Linear    Binary  \n";
     for (const size_t itemCount : {64U, 512U, 4096U}) {
         vector<string> labels;
         labels.reserve(itemCount);

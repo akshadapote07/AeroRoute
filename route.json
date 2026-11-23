@@ -1,42 +1,42 @@
 {
   "source": "cpp_subject1",
   "type": "SLL",
-  "node_count": 9,
+  "node_count": 17,
   "current_index": 0,
   "waypoints": [
     {
       "row": 0,
       "col": 0,
-      "label": "WH-Mumbai"
+      "label": "WH-CO4"
     },
     {
       "row": 0,
       "col": 1,
-      "label": "CP-1"
-    },
-    {
-      "row": 0,
-      "col": 2,
-      "label": "WP-2"
-    },
-    {
-      "row": 0,
-      "col": 3,
-      "label": "WP-3"
-    },
-    {
-      "row": 0,
-      "col": 4,
-      "label": "WP-4"
+      "label": "WP-1"
     },
     {
       "row": 1,
-      "col": 4,
-      "label": "WP-5"
+      "col": 1,
+      "label": "WP-2"
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "label": "WP-3"
     },
     {
       "row": 2,
-      "col": 4,
+      "col": 2,
+      "label": "CP-CO4"
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "label": "WP-5"
+    },
+    {
+      "row": 3,
+      "col": 3,
       "label": "WP-6"
     },
     {
@@ -47,7 +47,47 @@
     {
       "row": 4,
       "col": 4,
-      "label": "CS-Powai"
+      "label": "CS-CO4"
+    },
+    {
+      "row": 3,
+      "col": 4,
+      "label": "WP-9"
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "label": "WP-10"
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "label": "WP-11"
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "label": "CP-CO4"
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "label": "WP-13"
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "label": "WP-14"
+    },
+    {
+      "row": 0,
+      "col": 1,
+      "label": "WP-15"
+    },
+    {
+      "row": 0,
+      "col": 0,
+      "label": "WH-CO4"
     }
   ]
 }

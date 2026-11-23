@@ -1,12 +1,43 @@
 {
   "source": "cpp_subject4_3",
   "entities": [
+    {
+      "type": "warehouse",
+      "label": "WH-CO4",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "type": "customer",
+      "label": "CS-CO4",
+      "row": 4,
+      "col": 4
+    },
+    {
+      "type": "charging",
+      "label": "CP-CO4",
+      "row": 2,
+      "col": 2
+    },
+    {
+      "type": "drone",
+      "label": "AR-D1 DeliveryDrone",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "type": "package",
+      "label": "AR-PKG-1",
+      "row": 4,
+      "col": 4,
+      "weight_kg": 2.5
+    }
   ],
   "graphics": {
     "translate_x": 0.0000,
     "translate_y": 0.0000,
     "rotate_deg": 0.0000,
     "scale": 1.0000,
-    "clipped_segments": 0
+    "clipped_segments": 8
   }
 }

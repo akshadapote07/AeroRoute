@@ -4,7 +4,7 @@
   "RBX": 1850,
   "RCX": 4500,
   "RDX": 8700,
-  "PC": 4212,
+  "PC": 4216,
   "IR": 4769728,
   "SP": 140737488355327,
   "flags": {
@@ -15,11 +15,6 @@
     "PF": 0
   },
   "instructions": [
-    {
-      "addr": "0x1040",
-      "op": "JZ",
-      "args": "target  ; Jump NOT TAKEN"
-    },
     {
       "addr": "0x1044",
       "op": "ADD",
@@ -67,11 +62,16 @@
     },
     {
       "addr": "0x106C",
+      "op": "DIV_SHIFT_SUB",
+      "args": "54 / 6 = 9 remainder 0"
+    },
+    {
+      "addr": "0x1070",
       "op": "SCASB",
       "args": "REPNE SCASB ; input length = 8"
     },
     {
-      "addr": "0x1070",
+      "addr": "0x1074",
       "op": "MOVSB",
       "args": "REP MOVSB ; appended 6 bytes"
     }
