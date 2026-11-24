@@ -1,0 +1,25 @@
+# Generated build outputs
+/build/*.exe
+/build/*.o
+/build/*.obj
+
+# Local IDE state
+/.vs/
+/.idea/
+/.vscode/.ropeproject/
+*.suo
+*.user
+
+# Temporary files and logs
+*.log
+*.tmp
+*.swp
+
+# Local secrets and certificates
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
