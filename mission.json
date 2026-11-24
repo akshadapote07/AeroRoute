@@ -3,41 +3,83 @@
   "entities": [
     {
       "type": "warehouse",
-      "label": "WH-CO4",
+      "label": "WH-Delhi",
       "row": 0,
       "col": 0
     },
     {
       "type": "customer",
-      "label": "CS-CO4",
-      "row": 4,
-      "col": 4
+      "label": "CS-Delhi-Delivery",
+      "row": 8,
+      "col": 7
+    },
+    {
+      "type": "customer",
+      "label": "CS-Rohini",
+      "row": 9,
+      "col": 9
+    },
+    {
+      "type": "customer",
+      "label": "CS-Saket",
+      "row": 9,
+      "col": 0
+    },
+    {
+      "type": "customer",
+      "label": "CS-Dwarka",
+      "row": 5,
+      "col": 0
     },
     {
       "type": "charging",
-      "label": "CP-CO4",
-      "row": 2,
+      "label": "CP-Delhi-1",
+      "row": 6,
+      "col": 5
+    },
+    {
+      "type": "charging",
+      "label": "CP-Delhi-2",
+      "row": 7,
+      "col": 5
+    },
+    {
+      "type": "charging",
+      "label": "CP-Delhi-3",
+      "row": 8,
+      "col": 8
+    },
+    {
+      "type": "charging",
+      "label": "CP-Delhi-4",
+      "row": 8,
+      "col": 5
+    },
+    {
+      "type": "charging",
+      "label": "CP-Delhi-5",
+      "row": 1,
       "col": 2
     },
     {
       "type": "drone",
-      "label": "AR-D1 DeliveryDrone",
+      "label": "AR-Delhi-01 AR-D1 DeliveryDrone",
       "row": 0,
       "col": 0
     },
     {
       "type": "package",
-      "label": "AR-PKG-1",
-      "row": 4,
-      "col": 4,
-      "weight_kg": 2.5
+      "label": "AR-PKG-8",
+      "row": 8,
+      "col": 7,
+      "weight_kg": 1
     }
   ],
   "graphics": {
     "translate_x": 0.0000,
-    "translate_y": 0.0000,
+    "translate_y": -5.0000,
     "rotate_deg": 0.0000,
     "scale": 1.0000,
-    "clipped_segments": 8
+    "clipped_segments": 32
   }
 }

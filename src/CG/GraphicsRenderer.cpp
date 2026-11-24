@@ -980,7 +980,8 @@ void GraphicsRenderer::drawDeliveryPopup() {
              0.35f, 1.00f, 0.65f, false);
     glColor3f(1.0f, 1.0f, 1.0f);
     glRasterPos2f(20.0f, -48.0f);
-    const char* send = "Send Another";
+    const char* send = deliveryPopupCallback
+        ? "New Mission" : "Send Another";
     for (const char* character = send; *character; ++character) {
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *character);
     }
@@ -1540,10 +1541,12 @@ void GraphicsRenderer::mouseCallback(
 
     if (worldX >= 10.0f && worldX <= 125.0f &&
         worldY <= -20.0f && worldY >= -66.0f) {
-        cout << "[CG] User selected send another drone.\n";
-        r->restartDeliverySimulation();
         if (r->deliveryPopupCallback) {
+            cout << "[CG] New mission requested.\n";
             r->deliveryPopupCallback(2);
+        } else {
+            cout << "[CG] User selected send another drone.\n";
+            r->restartDeliverySimulation();
         }
         glutPostRedisplay();
     }

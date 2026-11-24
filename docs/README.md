@@ -39,7 +39,7 @@ shift-and-subtract division, and `SCASB` / `MOVSB` string processing.
 Graphics Lab, from `src/CG`:
 
 ```bat
-g++ Subject3_Main.cpp GraphicsRenderer.cpp -o ..\..\build\subject3.exe -std=c++17 -lfreeglut -lopengl32 -lglu32
+g++ Subject3_Main.cpp GraphicsRenderer.cpp -o ..\..\build\subject3.exe -std=c++17 -DFREEGLUT_STATIC -static -lfreeglut -lopengl32 -lglu32 -lgdi32 -lwinmm -ladvapi32
 ..\..\build\subject3.exe
 ```
 
@@ -53,9 +53,23 @@ g++ Subject4_Main.cpp Location.cpp Warehouse.cpp CustomerSite.cpp ChargingPad.cp
 Integrated system, from `src/PL`:
 
 ```bat
-g++ ..\main.cpp ..\PL\CityGrid.cpp ..\PL\Co4.cpp ..\PL\RouteTracker.cpp ..\PL\DeliveryScheduler.cpp ..\COA\DroneRegisters.cpp ..\COA\Co4.cpp ..\COA\AssemblyEngine.cpp ..\COA\DisplacementAsm.S ..\COA\Co3Asm.S ..\CG\AeroRouteMenu.cpp ..\CG\Co4.cpp ..\CG\GraphicsRenderer.cpp ..\PSOOP\Location.cpp ..\PSOOP\Warehouse.cpp ..\PSOOP\CustomerSite.cpp ..\PSOOP\ChargingPad.cpp ..\PSOOP\Co4.cpp ..\PSOOP\Package.cpp ..\PSOOP\Drone.cpp -o ..\..\build\aeroroute.exe -std=c++17 -lfreeglut -lopengl32 -lglu32
+g++ ..\main.cpp ..\PL\CityGrid.cpp ..\PL\Co4.cpp ..\PL\RouteTracker.cpp ..\PL\DeliveryScheduler.cpp ..\COA\DroneRegisters.cpp ..\COA\Co4.cpp ..\COA\AssemblyEngine.cpp ..\COA\DisplacementAsm.S ..\COA\Co3Asm.S ..\CG\AeroRouteMenu.cpp ..\CG\Co4.cpp ..\CG\GraphicsRenderer.cpp ..\PSOOP\Location.cpp ..\PSOOP\Warehouse.cpp ..\PSOOP\CustomerSite.cpp ..\PSOOP\ChargingPad.cpp ..\PSOOP\Co4.cpp ..\PSOOP\Package.cpp ..\PSOOP\Drone.cpp -o ..\..\build\aeroroute.exe -std=c++17 -DFREEGLUT_STATIC -static -lfreeglut -lopengl32 -lglu32 -lgdi32 -lwinmm -ladvapi32
 ..\..\build\aeroroute.exe
 ```
+
+`-DFREEGLUT_STATIC -static` links FreeGLUT and the MinGW runtime into the
+executable. The OpenGL and Windows system libraries remain OS dependencies.
+
+### VS Code tasks
+
+The workspace build task uses `C:\msys64\mingw64\bin\g++.exe` and compiles
+the integrated PL, COA, CG, and PSOOP sources into `build\aeroroute.exe`.
+Press **Ctrl+Shift+B** to build, or use **Tasks: Run Task** to select
+**Run AeroRoute**, **Run AeroRoute CO4 CG**, or
+**Run AeroRoute CO4 Checks**. The build task adds MinGW's `bin` folder to
+`PATH`; the integrated executable itself does not need MinGW runtime DLLs.
+Run tasks use `src\PL` as the working directory so relative JSON paths resolve
+to the project root.
 
 The integrated controller opens a graphical OpenGL setup window. Use the
 mouse to select a field and type its value; TAB changes the active field,

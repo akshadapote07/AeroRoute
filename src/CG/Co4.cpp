@@ -149,10 +149,13 @@ void runCgCo4(int argc, char** argv) {
     renderer.set3DViewEnabled(true);
     renderer.setBatteryStatus(drone.getBatteryPct(), false);
     renderer.setDeliveryPopupCallback([](int action) {
-        if (action == 1) cgCo4BackToMenuRequested = true;
+        if (action == 1 || action == 2) {
+            cgCo4BackToMenuRequested = true;
+        }
         cout << (action == 1
                      ? "[CG] Back to menu requested.\n"
-                     : "[CG] Additional delivery drone requested.\n");
+                     : "[CG] Returning to mission setup for another delivery.\n");
+        if (action == 2) glutLeaveMainLoop();
     });
     verifyCgCo4Transform();
     renderer.applyTransform(0.0f, 0.0f, 0.0f, 1.0f);

@@ -662,10 +662,13 @@ void runMission(int argc, char** argv) {
     renderer.setDeliveryPopupCallback([](int action) {
         if (action == 1) {
             returnToCitySelectionRequested = true;
+        } else if (action == 2) {
+            returnToCitySelectionRequested = true;
+            glutLeaveMainLoop();
         }
         cout << (action == 1
                      ? "[CG] Back to menu requested.\n"
-                     : "[CG] Additional delivery drone requested.\n");
+                     : "[CG] Returning to mission setup for another delivery.\n");
     });
     renderer.applyTransform(
         translateXCells * 50.0f, translateYCells * 50.0f,

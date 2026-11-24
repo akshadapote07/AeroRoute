@@ -1,13 +1,13 @@
 {
   "source": "cpp_subject1",
   "type": "SLL",
-  "node_count": 17,
+  "node_count": 39,
   "current_index": 0,
   "waypoints": [
     {
       "row": 0,
       "col": 0,
-      "label": "WH-CO4"
+      "label": "WH-Delhi"
     },
     {
       "row": 0,
@@ -15,19 +15,19 @@
       "label": "WP-1"
     },
     {
-      "row": 1,
-      "col": 1,
+      "row": 0,
+      "col": 2,
       "label": "WP-2"
     },
     {
       "row": 1,
       "col": 2,
-      "label": "WP-3"
+      "label": "CP-Delhi-5"
     },
     {
-      "row": 2,
-      "col": 2,
-      "label": "CP-CO4"
+      "row": 1,
+      "col": 3,
+      "label": "WP-4"
     },
     {
       "row": 2,
@@ -35,59 +35,169 @@
       "label": "WP-5"
     },
     {
-      "row": 3,
-      "col": 3,
+      "row": 2,
+      "col": 4,
       "label": "WP-6"
     },
     {
-      "row": 3,
-      "col": 4,
+      "row": 2,
+      "col": 5,
       "label": "WP-7"
     },
     {
-      "row": 4,
-      "col": 4,
-      "label": "CS-CO4"
+      "row": 2,
+      "col": 6,
+      "label": "WP-8"
     },
     {
       "row": 3,
-      "col": 4,
+      "col": 6,
       "label": "WP-9"
     },
     {
-      "row": 3,
-      "col": 3,
+      "row": 4,
+      "col": 6,
       "label": "WP-10"
     },
     {
-      "row": 2,
-      "col": 3,
+      "row": 5,
+      "col": 6,
       "label": "WP-11"
     },
     {
-      "row": 2,
-      "col": 2,
-      "label": "CP-CO4"
+      "row": 5,
+      "col": 5,
+      "label": "WP-12"
     },
     {
-      "row": 1,
+      "row": 6,
+      "col": 5,
+      "label": "CP-Delhi-1"
+    },
+    {
+      "row": 7,
+      "col": 5,
+      "label": "CP-Delhi-2"
+    },
+    {
+      "row": 8,
+      "col": 5,
+      "label": "CP-Delhi-4"
+    },
+    {
+      "row": 9,
+      "col": 5,
+      "label": "WP-16"
+    },
+    {
+      "row": 9,
+      "col": 6,
+      "label": "WP-17"
+    },
+    {
+      "row": 9,
+      "col": 7,
+      "label": "WP-18"
+    },
+    {
+      "row": 8,
+      "col": 7,
+      "label": "CS-Delhi-Delivery"
+    },
+    {
+      "row": 9,
+      "col": 7,
+      "label": "WP-20"
+    },
+    {
+      "row": 9,
+      "col": 6,
+      "label": "WP-21"
+    },
+    {
+      "row": 9,
+      "col": 5,
+      "label": "WP-22"
+    },
+    {
+      "row": 8,
+      "col": 5,
+      "label": "CP-Delhi-4"
+    },
+    {
+      "row": 8,
+      "col": 4,
+      "label": "WP-24"
+    },
+    {
+      "row": 8,
+      "col": 3,
+      "label": "WP-25"
+    },
+    {
+      "row": 7,
+      "col": 3,
+      "label": "WP-26"
+    },
+    {
+      "row": 6,
+      "col": 3,
+      "label": "WP-27"
+    },
+    {
+      "row": 5,
+      "col": 3,
+      "label": "WP-28"
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "label": "WP-29"
+    },
+    {
+      "row": 4,
       "col": 2,
-      "label": "WP-13"
+      "label": "WP-30"
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "label": "WP-31"
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "label": "WP-32"
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "label": "WP-33"
     },
     {
       "row": 1,
       "col": 1,
-      "label": "WP-14"
+      "label": "WP-34"
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "label": "CP-Delhi-5"
+    },
+    {
+      "row": 0,
+      "col": 2,
+      "label": "WP-36"
     },
     {
       "row": 0,
       "col": 1,
-      "label": "WP-15"
+      "label": "WP-37"
     },
     {
       "row": 0,
       "col": 0,
-      "label": "WH-CO4"
+      "label": "WH-Delhi"
     }
   ]
 }

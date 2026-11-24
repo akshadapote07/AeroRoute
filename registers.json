@@ -1,10 +1,10 @@
 {
   "source": "cpp_subject2",
-  "RAX": 135,
-  "RBX": 1850,
+  "RAX": 105,
+  "RBX": 1500,
   "RCX": 4500,
-  "RDX": 8700,
-  "PC": 4216,
+  "RDX": 9000,
+  "PC": 4172,
   "IR": 4769728,
   "SP": 140737488355327,
   "flags": {
@@ -16,70 +16,70 @@
   },
   "instructions": [
     {
+      "addr": "0x1018",
+      "op": "MOV",
+      "args": "R3, 0  ; R3 <- 0"
+    },
+    {
+      "addr": "0x101C",
+      "op": "MOV",
+      "args": "R4, 8  ; R4 <- 8"
+    },
+    {
+      "addr": "0x1020",
+      "op": "SUB",
+      "args": "RAX, R10  ; deltaX = 7 [DisplacementAsm.S]"
+    },
+    {
+      "addr": "0x1024",
+      "op": "IMUL",
+      "args": "R10, R10  ; deltaX squared [DisplacementAsm.S]"
+    },
+    {
+      "addr": "0x1028",
+      "op": "SUB",
+      "args": "RAX, R11  ; deltaY = 8 [DisplacementAsm.S]"
+    },
+    {
+      "addr": "0x102C",
+      "op": "IMUL",
+      "args": "RAX, RAX  ; deltaY squared [DisplacementAsm.S]"
+    },
+    {
+      "addr": "0x1030",
+      "op": "ADD",
+      "args": "RAX, R10  ; sum of squares [DisplacementAsm.S]"
+    },
+    {
+      "addr": "0x1034",
+      "op": "CVTSI2SD",
+      "args": "XMM0, RAX  ; integer sum to double [DisplacementAsm.S]"
+    },
+    {
+      "addr": "0x1038",
+      "op": "SQRTSD",
+      "args": "XMM0, XMM0  ; Euclidean distance [DisplacementAsm.S]"
+    },
+    {
+      "addr": "0x103C",
+      "op": "CMP",
+      "args": "distance, 0 [Co3Asm.S]"
+    },
+    {
+      "addr": "0x1040",
+      "op": "JZ",
+      "args": "target  ; Jump NOT TAKEN"
+    },
+    {
       "addr": "0x1044",
       "op": "ADD",
-      "args": "RAX, 15  ; 120 + 15 = 135"
-    },
-    {
-      "addr": "0x104C",
-      "op": "CMP",
-      "args": "RDX, 2000"
-    },
-    {
-      "addr": "0x1050",
-      "op": "JG",
-      "args": "target  ; Jump TAKEN"
-    },
-    {
-      "addr": "0x1054",
-      "op": "ADD",
-      "args": "RAX, 9  ; 0 + 9 = 9"
-    },
-    {
-      "addr": "0x1058",
-      "op": "ADD",
-      "args": "RAX, 9  ; 9 + 9 = 18"
-    },
-    {
-      "addr": "0x105C",
-      "op": "ADD",
-      "args": "RAX, 9  ; 18 + 9 = 27"
-    },
-    {
-      "addr": "0x1060",
-      "op": "ADD",
-      "args": "RAX, 9  ; 27 + 9 = 36"
-    },
-    {
-      "addr": "0x1064",
-      "op": "ADD",
-      "args": "RAX, 9  ; 36 + 9 = 45"
-    },
-    {
-      "addr": "0x1068",
-      "op": "ADD",
-      "args": "RAX, 9  ; 45 + 9 = 54"
-    },
-    {
-      "addr": "0x106C",
-      "op": "DIV_SHIFT_SUB",
-      "args": "54 / 6 = 9 remainder 0"
-    },
-    {
-      "addr": "0x1070",
-      "op": "SCASB",
-      "args": "REPNE SCASB ; input length = 8"
-    },
-    {
-      "addr": "0x1074",
-      "op": "MOVSB",
-      "args": "REP MOVSB ; appended 6 bytes"
+      "args": "RAX, 5  ; 100 + 5 = 105 [Co3Asm.S]"
     }
   ],
   "displacement": {
-    "dx": 5.0000,
-    "dy": 7.0000,
-    "total": 8.6023,
+    "dx": 7.0000,
+    "dy": 8.0000,
+    "total": 10.6301,
     "asm_op": "SUB R4, R3 (deltaY dominant)"
   }
 }

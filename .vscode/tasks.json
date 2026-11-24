@@ -1,0 +1,97 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build AeroRoute (Integrated)",
+			"type": "process",
+			"command": "C:\\msys64\\mingw64\\bin\\g++.exe",
+			"args": [
+				"src\\main.cpp",
+				"src\\PL\\CityGrid.cpp",
+				"src\\PL\\Co4.cpp",
+				"src\\PL\\RouteTracker.cpp",
+				"src\\PL\\DeliveryScheduler.cpp",
+				"src\\COA\\DroneRegisters.cpp",
+				"src\\COA\\Co4.cpp",
+				"src\\COA\\AssemblyEngine.cpp",
+				"src\\COA\\DisplacementAsm.S",
+				"src\\COA\\Co3Asm.S",
+				"src\\CG\\AeroRouteMenu.cpp",
+				"src\\CG\\Co4.cpp",
+				"src\\CG\\GraphicsRenderer.cpp",
+				"src\\PSOOP\\Location.cpp",
+				"src\\PSOOP\\Warehouse.cpp",
+				"src\\PSOOP\\CustomerSite.cpp",
+				"src\\PSOOP\\ChargingPad.cpp",
+				"src\\PSOOP\\Co4.cpp",
+				"src\\PSOOP\\Package.cpp",
+				"src\\PSOOP\\Drone.cpp",
+				"-o",
+				"build\\aeroroute.exe",
+				"-std=c++17",
+				"-DFREEGLUT_STATIC",
+				"-static",
+				"-lfreeglut",
+				"-lopengl32",
+				"-lglu32",
+				"-lgdi32",
+				"-lwinmm",
+				"-ladvapi32"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"env": {
+					"PATH": "C:\\msys64\\mingw64\\bin;${env:PATH}"
+				}
+			}
+		},
+		{
+			"label": "Run AeroRoute",
+			"type": "process",
+			"command": "${workspaceFolder}\\build\\aeroroute.exe",
+			"args": [],
+			"options": {
+				"cwd": "${workspaceFolder}\\src\\PL"
+			},
+			"dependsOn": "Build AeroRoute (Integrated)",
+			"dependsOrder": "sequence",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run AeroRoute CO4 CG",
+			"type": "process",
+			"command": "${workspaceFolder}\\build\\aeroroute.exe",
+			"args": [
+				"--co4-cg"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}\\src\\PL"
+			},
+			"dependsOn": "Build AeroRoute (Integrated)",
+			"dependsOrder": "sequence",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run AeroRoute CO4 Checks",
+			"type": "process",
+			"command": "${workspaceFolder}\\build\\aeroroute.exe",
+			"args": [
+				"--co4-check"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}\\src\\PL"
+			},
+			"dependsOn": "Build AeroRoute (Integrated)",
+			"dependsOrder": "sequence",
+			"problemMatcher": []
+		}
+	]
+}

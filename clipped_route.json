@@ -1,18 +1,16 @@
 {
   "algorithm": "Cohen-Sutherland",
-  "viewport": {"xmin": -95.0000, "xmax": 85.0000, "ymin": -35.0000, "ymax": 145.0000},
-  "source_segment_count": 16,
-  "rendered_segment_count": 8,
-  "rejected_segment_count": 8,
-  "clipped_endpoint_count": 2,
+  "viewport": {"xmin": -295.0000, "xmax": -115.0000, "ymin": 115.0000, "ymax": 295.0000},
+  "source_segment_count": 38,
+  "rendered_segment_count": 6,
+  "rejected_segment_count": 32,
+  "clipped_endpoint_count": 4,
   "segments": [
-    {"source_index": 4, "from": {"x": -95.0000, "y": 105.0000}, "to": {"x": -55.0000, "y": 105.0000}, "from_clipped": true, "to_clipped": false},
-    {"source_index": 5, "from": {"x": -55.0000, "y": 105.0000}, "to": {"x": -55.0000, "y": 55.0000}, "from_clipped": false, "to_clipped": false},
-    {"source_index": 6, "from": {"x": -55.0000, "y": 55.0000}, "to": {"x": -5.0000, "y": 55.0000}, "from_clipped": false, "to_clipped": false},
-    {"source_index": 7, "from": {"x": -5.0000, "y": 55.0000}, "to": {"x": -5.0000, "y": 5.0000}, "from_clipped": false, "to_clipped": false},
-    {"source_index": 8, "from": {"x": -5.0000, "y": 5.0000}, "to": {"x": -5.0000, "y": 55.0000}, "from_clipped": false, "to_clipped": false},
-    {"source_index": 9, "from": {"x": -5.0000, "y": 55.0000}, "to": {"x": -55.0000, "y": 55.0000}, "from_clipped": false, "to_clipped": false},
-    {"source_index": 10, "from": {"x": -55.0000, "y": 55.0000}, "to": {"x": -55.0000, "y": 105.0000}, "from_clipped": false, "to_clipped": false},
-    {"source_index": 11, "from": {"x": -55.0000, "y": 105.0000}, "to": {"x": -95.0000, "y": 105.0000}, "from_clipped": false, "to_clipped": true}
+    {"source_index": 0, "from": {"x": -205.0000, "y": 205.0000}, "to": {"x": -155.0000, "y": 205.0000}, "from_clipped": false, "to_clipped": false},
+    {"source_index": 1, "from": {"x": -155.0000, "y": 205.0000}, "to": {"x": -115.0000, "y": 205.0000}, "from_clipped": false, "to_clipped": true},
+    {"source_index": 33, "from": {"x": -155.0000, "y": 115.0000}, "to": {"x": -155.0000, "y": 155.0000}, "from_clipped": true, "to_clipped": false},
+    {"source_index": 34, "from": {"x": -155.0000, "y": 155.0000}, "to": {"x": -115.0000, "y": 155.0000}, "from_clipped": false, "to_clipped": true},
+    {"source_index": 36, "from": {"x": -115.0000, "y": 205.0000}, "to": {"x": -155.0000, "y": 205.0000}, "from_clipped": true, "to_clipped": false},
+    {"source_index": 37, "from": {"x": -155.0000, "y": 205.0000}, "to": {"x": -205.0000, "y": 205.0000}, "from_clipped": false, "to_clipped": false}
   ]
 }
